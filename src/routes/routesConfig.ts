@@ -11,12 +11,18 @@ import {
 } from "../modules/settings/privacy/Privacy.controller";
 import { AdminRoutes } from "../modules/admin/admin.route";
 import { HealthDetailsRoutes } from "../modules/health_details/health_details.routes";
+import { MealRoutes } from "../modules/meal/meal.routes";
+import { WorkoutRoutes } from "../modules/workout_details/workout_details.routes";
+import { PlanRoutes } from "../modules/plan/plan.routes";
 
 // import { PaymentRoute } from "../modules/unused_payments/payment.route";
 
 export const routesConfig = [
   { path: "auth", handler: UserRoutes },
   { path: "health", handler: HealthDetailsRoutes },
+  { path: "meal", handler: MealRoutes },
+  { path: "workout", handler: WorkoutRoutes },
+  { path: "plan", handler: PlanRoutes },
 
   { path: "terms", handler: TermsRoutes },
   { path: "about", handler: AboutRoutes },

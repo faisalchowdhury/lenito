@@ -10,17 +10,18 @@ import { FIREBASE_SERVICE_ACCOUNT_PATH } from "../../../config";
 import httpStatus from "http-status";
 
 // Read and parse the Firebase service account JSON file
-const serviceAccountBuffer = readFileSync(
-  FIREBASE_SERVICE_ACCOUNT_PATH,
-  "utf8"
-);
-const serviceAccount = JSON.parse(serviceAccountBuffer);
+// const serviceAccountBuffer = readFileSync(
+//   FIREBASE_SERVICE_ACCOUNT_PATH,
+//   "utf8"
+// );
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
-}
+// const serviceAccount = JSON.parse(serviceAccountBuffer);
+
+// if (!admin.apps.length) {
+//   admin.initializeApp({
+//     credential: admin.credential.cert(serviceAccount),
+//   });
+// }
 
 export const sendPushNotification = async (
   fcmToken: string,
