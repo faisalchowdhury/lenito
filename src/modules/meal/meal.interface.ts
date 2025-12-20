@@ -12,4 +12,5 @@ export interface IMeal extends Document {
   ingredients: string[];
   mealGroupId: string;
   date: Date;
+  status: string;
 }

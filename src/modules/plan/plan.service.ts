@@ -46,3 +46,10 @@ export const createPlanService = async (req: Request) => {
     createdBy: userId,
   });
 };
+
+// get plans
+
+export const getPlanService = async () => {
+  const getPlans = await PlanModel.find();
+  return getPlans;
+};

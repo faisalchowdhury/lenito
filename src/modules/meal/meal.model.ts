@@ -15,6 +15,11 @@ const mealSchema = new Schema<IMeal>({
   ingredients: { type: [String], required: true },
   mealGroupId: { type: String, required: true },
   date: { type: Date, required: true },
+  status: {
+    type: String,
+    default: "not_yet_done",
+    enum: ["not_yet_done", "done"],
+  },
 });
 
 export const MealModel = mongoose.model<IMeal>("Meal", mealSchema);

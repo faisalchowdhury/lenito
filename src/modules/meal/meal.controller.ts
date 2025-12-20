@@ -6,6 +6,7 @@ import {
   createMealService,
   getCurrentMealsService,
   swapMealService,
+  updateMealStatusService,
 } from "./meal.service";
 import sendResponse from "../../utils/sendResponse";
 
@@ -45,3 +46,15 @@ export const swapMeal = catchAsync(async (req: Request, res: Response) => {
     data: swapMeal,
   });
 });
+
+export const updateMealStatus = catchAsync(
+  async (req: Request, res: Response) => {
+    const updateMealStatus = await updateMealStatusService(req);
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Meal completed successfully",
+      data: null,
+    });
+  }
+);

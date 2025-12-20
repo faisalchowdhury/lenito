@@ -5,63 +5,129 @@ import ApiError from "../../errors/ApiError";
 import uniqid from "uniqid";
 import { Types } from "mongoose";
 import dayjs from "dayjs";
+import { MealUsageModel } from "../meal_usage/meal_usage.model";
 // create meal service
 export const createMealService = async (req: Request) => {
   const { date, meals } = req.body;
   const user = req.user as JwtPayloadWithUser;
+  const subscription = (req as any).subscription;
 
-  if (!date || !meals) {
-    throw new ApiError(400, "Date and meals are required");
+  const dateStr = dayjs(date).format("YYYY-MM-DD");
+
+  // ---- DATE VALIDATION (DO NOT REMOVE EXISTING LOGIC) ----
+  const todayStr = dayjs().format("YYYY-MM-DD");
+
+  //  Prevent previous day planning
+  if (dayjs(dateStr).isBefore(todayStr)) {
+    throw new ApiError(400, "You cannot plan meals for previous days");
   }
-  const today = dayjs().format("YYYY-MM-DD");
 
-  const findMeals = await MealModel.find({ date: today, userId: user.id });
+  //  Prevent planning outside subscription period
+  if (subscription) {
+    const subStart = dayjs(subscription.startDate).format("YYYY-MM-DD");
+    const subEnd = dayjs(subscription.endDate).format("YYYY-MM-DD");
 
-  if (findMeals.length > 0) {
-    throw new ApiError(400, "Meals for today already exist ");
+    if (dayjs(dateStr).isBefore(subStart)) {
+      throw new ApiError(
+        400,
+        "You cannot plan meals before your subscription start date"
+      );
+    }
+
+    if (dayjs(dateStr).isAfter(subEnd)) {
+      throw new ApiError(
+        400,
+        "Your subscription has expired. Please renew to plan meals"
+      );
+    }
   }
 
   const userId = user.id;
+
+  const weeklyLimit = subscription?.planId?.limits?.mealsPerWeek ?? 1;
+  const monthlyLimit = subscription?.planId?.limits?.mealsPerMonth ?? 4;
+
+  // Selected meals for the day
+  const selectedMeals = Object.keys(meals).filter(
+    (m) => Array.isArray(meals[m]) && meals[m].length > 0
+  );
+  if (selectedMeals.length === 0) throw new ApiError(400, "No meals selected");
+
+  // --- Find or create usage record ---
+  let usage = await MealUsageModel.findOne({ userId });
+  if (!usage) {
+    usage = new MealUsageModel({ userId, mealPlans: [] });
+  }
+
+  // --- Check weekly limit ---
+  const weekStart = dayjs(date).startOf("week").format("YYYY-MM-DD");
+  const weekEnd = dayjs(date).endOf("week").format("YYYY-MM-DD");
+
+  const weeklyPlans = usage.mealPlans.filter(
+    (p) => p.planDate >= weekStart && p.planDate <= weekEnd
+  );
+
+  if (weeklyPlans.length >= weeklyLimit) {
+    throw new ApiError(
+      403,
+      `Weekly meal plan limit reached (${weeklyLimit} days)`
+    );
+  }
+
+  // --- Check monthly limit ---
+  const monthStart = dayjs(date).startOf("month").format("YYYY-MM-DD");
+  const monthEnd = dayjs(date).endOf("month").format("YYYY-MM-DD");
+
+  const monthlyPlans = usage.mealPlans.filter(
+    (p) => p.planDate >= monthStart && p.planDate <= monthEnd
+  );
+
+  if (monthlyPlans.length >= monthlyLimit) {
+    throw new ApiError(
+      403,
+      `Monthly meal plan limit reached (${monthlyLimit} days)`
+    );
+  }
+
+  // --- Prevent duplicate meal plan for same day ---
+  const existingPlan = usage.mealPlans.find((p) => p.planDate === dateStr);
+  if (existingPlan)
+    throw new ApiError(400, "Meal plan for this day already exists");
+
+  // --- Add new meal plan ---
+  usage.mealPlans.push({ planDate: dateStr, meals: selectedMeals });
+  await usage.save();
+
+  // --- Create MealModel documents ---
   const mealGroupId = uniqid();
   const mealDocs: any[] = [];
 
-  for (const [mealType, mealList] of Object.entries(meals)) {
-    if (!Array.isArray(mealList)) continue;
-
+  for (const mealType of selectedMeals) {
+    const mealList = meals[mealType];
     for (const meal of mealList) {
-      // Ensure caloryCount is an array of { label, kcal }
       const caloryCount = Array.isArray(meal.caloryCount)
-        ? meal.caloryCount.map((item: any) => ({
-            label: item.label,
-            kcal: item.kcal,
-          }))
+        ? meal.caloryCount.map((i: any) => ({ label: i.label, kcal: i.kcal }))
         : [];
-
-      // Calculate total kcal from caloryCount
       const totalKcal = caloryCount.reduce(
-        (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
+        (sum: number, i: any) => sum + i.kcal,
         0
       );
 
       mealDocs.push({
         userId,
-        date,
+        mealGroupId,
+        planDate: dateStr,
         mealType,
-        kcal: totalKcal,
-        caloryCount,
         description: meal.description,
         ingredients: meal.ingredients || [],
-        mealGroupId,
+        caloryCount,
+        date,
+        kcal: totalKcal,
       });
     }
   }
 
-  if (mealDocs.length === 0) {
-    throw new ApiError(400, "No valid meals provided");
-  }
-
   const savedMeals = await MealModel.insertMany(mealDocs);
-
   return savedMeals;
 };
 
@@ -110,7 +176,6 @@ export const swapMealService = async (req: Request) => {
     throw new ApiError(400, "Meal data is required");
   }
 
-  // Prepare payload for update
   const swapMealPayload: any = {};
 
   if (meal.breakfast.description !== undefined)
@@ -137,4 +202,23 @@ export const swapMealService = async (req: Request) => {
   }
 
   return swappedMeal;
+};
+
+export const updateMealStatusService = async (data: Request) => {
+  const { mealId } = data.params;
+  console.log(mealId);
+  const checkStatus = await MealModel.findOne({ _id: mealId });
+
+  if (!checkStatus) {
+    throw new ApiError(400, "Meal not found");
+  } else if (checkStatus?.status === "done") {
+    throw new ApiError(400, "This meal is already completed");
+  }
+
+  const updateStatus = await MealModel.updateOne(
+    { _id: mealId },
+    { status: "done" }
+  );
+
+  return updateStatus;
 };

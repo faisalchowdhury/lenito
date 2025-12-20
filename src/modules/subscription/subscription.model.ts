@@ -59,7 +59,7 @@ const subscriptionSchema = new Schema<ISubscription>(
     },
 
     paymentProvider: {
-      type: String, // "stripe", "razorpay"
+      type: String, // "stripe", "paypal"
     },
 
     externalSubscriptionId: {
@@ -82,4 +82,7 @@ subscriptionSchema.index(
   }
 );
 
-export default mongoose.model("Subscription", subscriptionSchema);
+export const SubscriptionModel = mongoose.model(
+  "Subscription",
+  subscriptionSchema
+);
