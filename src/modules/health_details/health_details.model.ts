@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { IHealth_details } from "./health_details.interface";
+import { IHealth_details, IWeightHistory } from "./health_details.interface";
 
 const healthDetailsSchema = new Schema<IHealth_details>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -17,7 +17,18 @@ const healthDetailsSchema = new Schema<IHealth_details>({
   foodDislikes: { type: [String], required: true },
 });
 
+const WeightHistorySchema: Schema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  weight: { type: Number, required: true },
+  date: { type: Date, default: Date.now },
+});
+
 export const HealthDetailsModel = mongoose.model<IHealth_details>(
   "HealthDetails",
   healthDetailsSchema
+);
+
+export const WeightHistoryModel = mongoose.model<IWeightHistory>(
+  "WeightHistory",
+  WeightHistorySchema
 );

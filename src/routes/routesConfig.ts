@@ -16,6 +16,7 @@ import { WorkoutRoutes } from "../modules/workout_details/workout_details.routes
 import { PlanRoutes } from "../modules/plan/plan.routes";
 import { WorkoutPlanRoutes } from "../modules/workout_plan/workout_plan.routes";
 import { SubscriptionRoutes } from "../modules/subscription/subscription.routes";
+import { StreakRoutes } from "../modules/streak/streak.routes";
 
 // import { PaymentRoute } from "../modules/unused_payments/payment.route";
 
@@ -27,6 +28,7 @@ export const routesConfig = [
   { path: "plan", handler: PlanRoutes },
   { path: "workout-plan", handler: WorkoutPlanRoutes },
   { path: "subscription", handler: SubscriptionRoutes },
+  { path: "streak", handler: StreakRoutes },
 
   { path: "terms", handler: TermsRoutes },
   { path: "about", handler: AboutRoutes },

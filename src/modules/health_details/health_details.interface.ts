@@ -12,3 +12,9 @@ export interface IHealth_details extends Document {
   foodAllergies: string[];
   foodDislikes: string[];
 }
+
+export interface IWeightHistory extends Document {
+  userId: Types.ObjectId;
+  weight: number;
+  date: Date;
+}

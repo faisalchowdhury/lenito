@@ -10,6 +10,9 @@ import seedSuperAdmin, {
   seedTerms,
 } from "./DB"; // Seeding function
 
+import { setupStreakCron } from "./utils/cron.setup";
+import { StreakRoutes } from "./modules/streak/streak.routes";
+
 let server: HttpServer;
 
 async function main() {
@@ -79,3 +82,9 @@ process.on("uncaughtException", (error) => {
   console.error("☠️ Uncaught exception detected:", error);
   server.close(() => process.exit(1));
 });
+
+// Mount streak routes
+app.use("/api/v1/streaks", StreakRoutes);
+
+// Setup cron job
+setupStreakCron();

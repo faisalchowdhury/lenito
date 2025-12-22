@@ -5,6 +5,7 @@ import { MealModel } from "./meal.model";
 import {
   createMealService,
   getCurrentMealsService,
+  getMealService,
   swapMealService,
   updateMealStatusService,
 } from "./meal.service";
@@ -58,3 +59,14 @@ export const updateMealStatus = catchAsync(
     });
   }
 );
+
+export const getMeal = catchAsync(async (req: Request, res: Response) => {
+  const getMeal = await getMealService(req);
+
+  return sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Meal Reterive successfully",
+    data: getMeal,
+  });
+});

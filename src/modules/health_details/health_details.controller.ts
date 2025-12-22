@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import catchAsync from "../../utils/catchAsync";
 import {
+  getWeightHistoryService,
   healthDetailsService,
   updateWeightService,
 } from "./health_details.service";
@@ -29,3 +30,14 @@ export const updateWeight = catchAsync(async (req: Request, res: Response) => {
     data: null,
   });
 });
+
+export const getWeightHistory = async (req: Request, res: Response) => {
+  const getWeightHistory = await getWeightHistoryService(req);
+
+  return sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Weight history reterive successfully",
+    data: getWeightHistory,
+  });
+};

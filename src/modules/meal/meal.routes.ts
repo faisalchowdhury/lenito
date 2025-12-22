@@ -3,17 +3,18 @@ import { guardRole } from "../../middlewares/roleGuard";
 import {
   createMeals,
   getCurrentMeals,
+  getMeal,
   swapMeal,
   updateMealStatus,
 } from "./meal.controller";
-import { mealAccessControl } from "../../middlewares/accessControl";
+import { accessControl } from "../../middlewares/accessControl";
 
 const router = express.Router();
 
 router.post(
   "/create-meals",
   guardRole(["user"]),
-  mealAccessControl,
+  accessControl({ forWorkout: false }),
   createMeals
 );
 router.get("/get-meals", guardRole(["user"]), getCurrentMeals);
@@ -23,4 +24,5 @@ router.patch(
   guardRole(["user"]),
   updateMealStatus
 );
+router.get("/get-meal/:mealId", guardRole(["user"]), getMeal);
 export const MealRoutes = router;
