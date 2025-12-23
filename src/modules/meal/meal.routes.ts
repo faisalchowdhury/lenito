@@ -2,6 +2,8 @@ import express from "express";
 import { guardRole } from "../../middlewares/roleGuard";
 import {
   createMeals,
+  createSingleMeal,
+  deleteMeal,
   getCurrentMeals,
   getMeal,
   swapMeal,
@@ -25,4 +27,12 @@ router.patch(
   updateMealStatus
 );
 router.get("/get-meal/:mealId", guardRole(["user"]), getMeal);
+
+router.delete("/delete-meal/:mealId", guardRole(["user"]), deleteMeal);
+router.post(
+  "/create-single-meal/:mealGroupId",
+  guardRole(["user"]),
+  createSingleMeal
+);
+
 export const MealRoutes = router;

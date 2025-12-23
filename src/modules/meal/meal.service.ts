@@ -320,30 +320,34 @@ export const swapMealService = async (req: Request) => {
   const user = req.user as JwtPayloadWithUser;
   const userId = user.id;
   const { mealId } = req.params;
-  const { meal } = req.body;
+  const mealData = req.body;
 
   if (!mealId) {
     throw new ApiError(400, "Meal Id is required");
   }
 
-  if (!meal || typeof meal !== "object") {
-    throw new ApiError(400, "Meal data is required");
+  if (
+    !mealData ||
+    typeof mealData !== "object" ||
+    !mealData.description ||
+    !mealData.caloryCount
+  ) {
+    throw new ApiError(
+      400,
+      "Meal data is required and must include description and caloryCount"
+    );
   }
 
-  const swapMealPayload: any = {};
+  const swapMealPayload: any = {
+    description: mealData.description,
+    ingredients: mealData.ingredients || [],
+    caloryCount: mealData.caloryCount,
+    kcal: mealData.caloryCount.reduce(
+      (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
+      0
+    ),
+  };
 
-  if (meal.breakfast.description !== undefined)
-    swapMealPayload.description = meal.breakfast.description;
-  if (meal.breakfast.ingredients !== undefined)
-    swapMealPayload.ingredients = meal.breakfast.ingredients;
-  if (meal.breakfast.caloryCount !== undefined)
-    swapMealPayload.caloryCount = meal.breakfast.caloryCount;
-  // Calculate total kcal from caloryCount
-  const totalKcal = meal.breakfast.caloryCount.reduce(
-    (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
-    0
-  );
-  swapMealPayload.kcal = totalKcal;
   // Update the meal document and return the updated meal
   const swappedMeal = await MealModel.findOneAndUpdate(
     { _id: mealId, userId },
@@ -387,4 +391,86 @@ export const getMealService = async (data: Request) => {
   }
 
   return getMeal;
+};
+
+export const deleteMealService = async (data: Request) => {
+  const { mealId } = data.params;
+
+  const deleteMeal = await MealModel.deleteOne({ _id: mealId });
+
+  return deleteMeal;
+};
+
+export const createSingleMealService = async (req: Request) => {
+  const user = req.user as JwtPayloadWithUser;
+  const userId = user.id;
+  const { mealGroupId } = req.params;
+  const { meal } = req.body;
+
+  if (!mealGroupId) {
+    throw new ApiError(400, "Meal Group Id is required");
+  }
+
+  if (!meal || typeof meal !== "object") {
+    throw new ApiError(400, "Meal data is required");
+  }
+
+  // Determine which mealType is being added (breakfast, lunch, dinner)
+  const mealTypes = ["breakfast", "lunch", "dinner"] as const;
+  let selectedMealType: (typeof mealTypes)[number] | null = null;
+
+  for (const type of mealTypes) {
+    if (meal[type] !== undefined) {
+      selectedMealType = type;
+      break;
+    }
+  }
+
+  if (!selectedMealType) {
+    throw new ApiError(
+      400,
+      "No valid meal type found (breakfast, lunch, dinner)"
+    );
+  }
+
+  const mealData = meal[selectedMealType];
+
+  if (!mealData.description || !mealData.caloryCount) {
+    throw new ApiError(400, "Meal must include description and caloryCount");
+  }
+
+  // Check if this mealType already exists in the mealGroup
+  const existingMeal = await MealModel.findOne({
+    mealGroupId,
+    mealType: selectedMealType,
+  });
+  if (existingMeal) {
+    throw new ApiError(
+      400,
+      `${selectedMealType} already exists in this meal group`
+    );
+  }
+
+  // Get the date from any existing meal in this mealGroupId
+  const groupMeal = await MealModel.findOne({ mealGroupId });
+  const mealDate = groupMeal ? groupMeal.date : new Date();
+
+  // Build meal payload
+  const newMeal = new MealModel({
+    userId,
+    mealGroupId,
+    mealType: selectedMealType,
+    description: mealData.description,
+    ingredients: mealData.ingredients || [],
+    caloryCount: mealData.caloryCount,
+    kcal: mealData.caloryCount.reduce(
+      (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
+      0
+    ),
+    date: mealDate,
+  });
+
+  await newMeal.save();
+
+  return newMeal;
 };

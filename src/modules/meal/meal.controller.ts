@@ -4,6 +4,8 @@ import { JwtPayloadWithUser } from "../../middlewares/userVerification";
 import { MealModel } from "./meal.model";
 import {
   createMealService,
+  createSingleMealService,
+  deleteMealService,
   getCurrentMealsService,
   getMealService,
   swapMealService,
@@ -70,3 +72,26 @@ export const getMeal = catchAsync(async (req: Request, res: Response) => {
     data: getMeal,
   });
 });
+
+export const deleteMeal = catchAsync(async (req: Request, res: Response) => {
+  const deleteMeal = await deleteMealService(req);
+  return sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Meal deleted successfully",
+    data: null,
+  });
+});
+
+export const createSingleMeal = catchAsync(
+  async (req: Request, res: Response) => {
+    const createSingleMeal = await createSingleMealService(req);
+
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Meal created successfully",
+      data: createSingleMeal,
+    });
+  }
+);

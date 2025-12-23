@@ -6,23 +6,26 @@ import { StreakModel } from "./streak.model";
 import mongoose from "mongoose";
 
 /**
+ * Normalize date to UTC midnight to avoid timezone issues
+ */
+const normalizeDay = (date: Date) => {
+  const d = new Date(date);
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+};
+
+/**
  * Check if user completed all tasks for a specific date
  */
 export const checkDailyCompletion = async (
   userId: mongoose.Types.ObjectId,
   date: Date
-): Promise<{
-  mealsCompleted: boolean;
-  workoutsCompleted: boolean;
-  isFullyCompleted: boolean;
-}> => {
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
+) => {
+  const startOfDay = normalizeDay(date);
+  const endOfDay = new Date(startOfDay);
+  endOfDay.setUTCHours(23, 59, 59, 999);
 
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  // Check meals
+  // -------- MEALS (REQUIRED) --------
   const totalMeals = await MealModel.countDocuments({
     userId,
     date: { $gte: startOfDay, $lte: endOfDay },
@@ -36,7 +39,7 @@ export const checkDailyCompletion = async (
 
   const mealsCompleted = totalMeals > 0 && totalMeals === completedMeals;
 
-  // Check workouts
+  // -------- WORKOUTS (OPTIONAL) --------
   const totalWorkouts = await WorkoutPlanModel.countDocuments({
     userId,
     workoutDate: { $gte: startOfDay, $lte: endOfDay },
@@ -49,10 +52,9 @@ export const checkDailyCompletion = async (
   });
 
   const workoutsCompleted =
-    totalWorkouts > 0 && totalWorkouts === completedWorkouts;
+    totalWorkouts === 0 || totalWorkouts === completedWorkouts;
 
-  const isFullyCompleted =
-    mealsCompleted && workoutsCompleted && totalMeals > 0 && totalWorkouts > 0;
+  const isFullyCompleted = mealsCompleted && workoutsCompleted;
 
   return { mealsCompleted, workoutsCompleted, isFullyCompleted };
 };
@@ -60,22 +62,13 @@ export const checkDailyCompletion = async (
 /**
  * Update user streak based on daily completion
  */
-
-const normalizeDay = (date: Date) => {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-};
-
 export const updateUserStreak = async (
   userId: mongoose.Types.ObjectId,
   date: Date
 ): Promise<void> => {
-  // 1️⃣ Check completion status
-  const completion = await checkDailyCompletion(userId, date);
   const today = normalizeDay(date);
+  const completion = await checkDailyCompletion(userId, today);
 
-  // 2️⃣ Get or create streak
   let streak = await StreakModel.findOne({ userId });
   if (!streak) {
     streak = new StreakModel({
@@ -84,25 +77,27 @@ export const updateUserStreak = async (
       longestStreak: 0,
       totalCompletedDays: 0,
       streakHistory: [],
+      lastCompletedDate: null,
     });
   }
 
-  // 3️⃣ Check if today already exists
-  const todayEntry = streak.streakHistory.find(
+  // Prevent duplicate processing
+  const alreadyProcessed = streak.streakHistory.find(
     (d) => normalizeDay(d.date).getTime() === today.getTime()
   );
+  if (alreadyProcessed) return;
 
-  if (todayEntry) {
-    // 🔁 Update flags only (no streak recalculation)
-    todayEntry.mealsCompleted = completion.mealsCompleted;
-    todayEntry.workoutsCompleted = completion.workoutsCompleted;
-    todayEntry.isFullyCompleted = completion.isFullyCompleted;
-
+  // Hard reset if today is incomplete
+  if (!completion.isFullyCompleted) {
+    streak.currentStreak = 0;
+    streak.streakHistory = [];
+    streak.totalCompletedDays = 0;
+    // streak.lastCompletedDate = null;
     await streak.save();
     return;
   }
 
-  // 4️⃣ Add new day entry
+  // Add today entry
   streak.streakHistory.push({
     date: today,
     mealsCompleted: completion.mealsCompleted,
@@ -110,32 +105,18 @@ export const updateUserStreak = async (
     isFullyCompleted: completion.isFullyCompleted,
   });
 
-  // 5️⃣ If today not fully completed → do NOT change streak
-  if (!completion.isFullyCompleted) {
-    await streak.save();
-    return;
-  }
-
-  // 6️⃣ Calculate streak continuation
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-
+  // Calculate streak
   if (!streak.lastCompletedDate) {
-    // First ever completed day
     streak.currentStreak = 1;
   } else {
-    const lastCompleted = normalizeDay(streak.lastCompletedDate);
+    const last = normalizeDay(streak.lastCompletedDate);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
 
-    if (lastCompleted.getTime() === yesterday.getTime()) {
-      // Continue streak
-      streak.currentStreak += 1;
-    } else {
-      // Streak broken → restart
-      streak.currentStreak = 1;
-    }
+    streak.currentStreak =
+      last.getTime() === yesterday.getTime() ? streak.currentStreak + 1 : 1;
   }
 
-  // 7️⃣ Update counters
   streak.lastCompletedDate = today;
   streak.totalCompletedDays += 1;
   streak.longestStreak = Math.max(streak.longestStreak, streak.currentStreak);
@@ -147,28 +128,17 @@ export const updateUserStreak = async (
  * Run nightly check for all users (scheduled task)
  */
 export const runNightlyStreakCheck = async (): Promise<void> => {
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
+  const today = normalizeDay(new Date());
 
-  try {
-    // Get all unique user IDs from meals and workouts
-    const mealUsers = await MealModel.distinct("userId");
-    const workoutUsers = await WorkoutPlanModel.distinct("userId");
+  const mealUsers = await MealModel.distinct("userId");
+  const workoutUsers = await WorkoutPlanModel.distinct("userId");
 
-    const allUserIds = [
-      ...new Set([...mealUsers, ...workoutUsers]),
-    ] as mongoose.Types.ObjectId[];
+  const allUserIds = [
+    ...new Set([...mealUsers, ...workoutUsers]),
+  ] as mongoose.Types.ObjectId[];
 
-    console.log(`Running nightly streak check for ${allUserIds.length} users`);
-
-    for (const userId of allUserIds) {
-      await updateUserStreak(userId, today);
-    }
-
-    console.log("Nightly streak check completed successfully");
-  } catch (error) {
-    console.error("Error in nightly streak check:", error);
-    throw error;
+  for (const userId of allUserIds) {
+    await updateUserStreak(userId, today);
   }
 };
 
@@ -194,33 +164,49 @@ export const getUserStreak = async (userId: mongoose.Types.ObjectId) => {
 };
 
 /**
- * Get weekly streak status (last 7 days)
+ * Get weekly streak status (only consecutive streak days including today)
  */
 export const getWeeklyStreakStatus = async (
   userId: mongoose.Types.ObjectId
 ) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const streak = await getUserStreak(userId);
 
-  const weekAgo = new Date(today);
-  weekAgo.setDate(weekAgo.getDate() - 6);
+  const today = normalizeDay(new Date());
+  const todayCompletion = await checkDailyCompletion(userId, today);
 
-  const weekData = [];
+  const weekData: typeof streak.streakHistory = [];
+  let previousDate: Date | null = null;
 
-  for (let i = 0; i < 7; i++) {
-    const currentDate = new Date(weekAgo);
-    currentDate.setDate(weekAgo.getDate() + i);
+  for (const entry of streak.streakHistory) {
+    if (!entry.isFullyCompleted) continue;
 
-    const completion = await checkDailyCompletion(userId, currentDate);
+    if (previousDate) {
+      const expectedDate = new Date(previousDate);
+      expectedDate.setDate(previousDate.getDate() + 1);
 
-    weekData.push({
-      date: currentDate,
-      day: currentDate.toLocaleDateString("en-US", { weekday: "short" }),
-      ...completion,
-    });
+      if (
+        normalizeDay(entry.date).getTime() !==
+        normalizeDay(expectedDate).getTime()
+      ) {
+        break; // streak chain broken
+      }
+    }
+
+    weekData.push(entry);
+    previousDate = entry.date;
   }
 
-  const streak = await getUserStreak(userId);
+  // Add today if fully completed and consecutive
+  if (
+    todayCompletion.isFullyCompleted &&
+    (!previousDate ||
+      normalizeDay(previousDate).getTime() + 86400000 === today.getTime())
+  ) {
+    weekData.push({
+      date: today,
+      ...todayCompletion,
+    });
+  }
 
   return {
     currentStreak: streak.currentStreak,
@@ -238,8 +224,7 @@ export const createTestData = async (
   days: number = 7,
   allCompleted: boolean = true
 ) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = normalizeDay(new Date());
 
   const createdMeals = [];
   const createdWorkouts = [];
@@ -249,7 +234,6 @@ export const createTestData = async (
     targetDate.setDate(today.getDate() - (days - 1 - i));
     targetDate.setHours(8, 0, 0, 0);
 
-    // Create meals for this day
     const mealTypes = ["Breakfast", "Lunch", "Dinner"];
     for (const mealType of mealTypes) {
       const meal = await MealModel.create({
@@ -266,7 +250,6 @@ export const createTestData = async (
       createdMeals.push(meal);
     }
 
-    // Create workout for this day
     const workout = await WorkoutPlanModel.create({
       userId,
       workoutName: `Test Workout ${i + 1}`,
