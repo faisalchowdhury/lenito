@@ -11,6 +11,7 @@ export interface IMeal extends Document {
   caloryCount: ICaloryItem[];
   ingredients: string[];
   mealGroupId: string;
+  image: string;
   date: Date;
   status: string;
 }

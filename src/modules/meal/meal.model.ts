@@ -14,6 +14,7 @@ const mealSchema = new Schema<IMeal>({
   caloryCount: { type: [CaloryItemSchema], required: true },
   ingredients: { type: [String], required: true },
   mealGroupId: { type: String, required: true },
+  image: { type: String, required: true },
   date: { type: Date, required: true },
   status: {
     type: String,

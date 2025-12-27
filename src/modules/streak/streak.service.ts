@@ -97,7 +97,7 @@ export const updateUserStreak = async (
     return;
   }
 
-  // Add today entry
+  // Add today entry.
   streak.streakHistory.push({
     date: today,
     mealsCompleted: completion.mealsCompleted,

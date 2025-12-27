@@ -1,4 +1,3 @@
-import jwt from "jsonwebtoken";
 import httpStatus from "http-status";
 import sendError from "../../../utils/sendError";
 import {
@@ -11,13 +10,11 @@ import { findUserById } from "../../user/user.utils";
 import catchAsync from "../../../utils/catchAsync";
 
 import sanitizeHtml from "sanitize-html";
-import { JWT_SECRET_KEY } from "../../../config";
+
 import { Request, Response } from "express";
 import { verifyToken } from "../../../utils/JwtToken";
 import ApiError from "../../../errors/ApiError";
 import { sanitizeOptions } from "../../../utils/SanitizeOptions";
-
-
 
 export const createPrivacy = catchAsync(async (req: Request, res: Response) => {
   let decoded;
@@ -103,7 +100,7 @@ export const updatePrivacy = catchAsync(async (req: Request, res: Response) => {
     // });
     throw new ApiError(
       httpStatus.INTERNAL_SERVER_ERROR,
-      "Failed to update privacy.",
+      "Failed to update privacy."
     );
   }
 
@@ -179,7 +176,7 @@ export const htmlRoute = catchAsync(async (req: Request, res: Response) => {
     console.error("Error fetching privacy policy:", error);
     throw new ApiError(
       error.statusCode || 500,
-      error.message || "Failed to fetch html route api.",
+      error.message || "Failed to fetch html route api."
     );
   }
 });
@@ -281,8 +278,8 @@ export const AppInstruction = catchAsync(
       console.error("Error fetching privacy policy:", error);
       throw new ApiError(
         error.statusCode || 500,
-        error.message || "Failed to fetch instruction api.",
+        error.message || "Failed to fetch instruction api."
       );
     }
-  },
+  }
 );
