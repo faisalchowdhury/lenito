@@ -8,7 +8,7 @@ const router = express.Router();
 router.post(
   "/add-workout",
   guardRole(["user"]),
-  // {  accessControl({ forWorkout: true }),}
+  accessControl({ forWorkout: true }),
   createWorkout
 );
 router.patch(

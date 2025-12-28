@@ -43,6 +43,7 @@ router.delete("/delete-meal/:mealId", guardRole(["user"]), deleteMeal);
 router.post(
   "/create-single-meal/:mealGroupId",
   guardRole(["user"]),
+  upload.single("mealImage"),
   createSingleMeal
 );
 

@@ -6,6 +6,7 @@ const healthDetailsSchema = new Schema<IHealth_details>({
   bloodGroup: { type: String, required: true },
   gender: { type: String, required: true },
   age: { type: Number, required: true },
+  country: { type: String, required: true },
   weight: { type: Number, required: true },
   height: { type: Number, required: true },
   diet: {

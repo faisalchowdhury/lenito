@@ -40,6 +40,7 @@ export const updateWorkoutStatusService = async (data: Request) => {
     _id: workoutPlanId,
   });
 
+  // check if workout plan doesnt exist .
   if (!checkWorkoutPlan) {
     throw new ApiError(400, "Workout plan not found");
   } else if (checkWorkoutPlan.status === "done") {

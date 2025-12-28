@@ -5,7 +5,7 @@ export interface IHealth_details extends Document {
   bloodGroup: string;
   gender: string;
   age: number;
-  address: string;
+  country: string;
   weight: number;
   height: number;
   diet: string;

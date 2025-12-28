@@ -7,6 +7,7 @@ import { Types } from "mongoose";
 import dayjs from "dayjs";
 import { MealUsageModel } from "../meal_usage/meal_usage.model";
 import { translateText } from "../../services/translate.service";
+import cron from "node-cron";
 // create meal service
 // previous logic
 // export const createMealService = async (req: Request) => {
@@ -493,26 +494,133 @@ export const deleteMealService = async (data: Request) => {
   return deleteMeal;
 };
 
+// export const createSingleMealService = async (req: Request) => {
+//   const user = req.user as JwtPayloadWithUser;
+//   const userId = user.id;
+//   const { mealGroupId } = req.params;
+//   const { meal } = req.body;
+
+//   if (!mealGroupId) {
+//     throw new ApiError(400, "Meal Group Id is required");
+//   }
+
+//   if (!meal || typeof meal !== "object") {
+//     throw new ApiError(400, "Meal data is required");
+//   }
+
+//   // Determine which mealType is being added (breakfast, lunch, dinner)
+//   const mealTypes = ["breakfast", "lunch", "dinner"] as const;
+//   let selectedMealType: (typeof mealTypes)[number] | null = null;
+
+//   for (const type of mealTypes) {
+//     if (meal[type] !== undefined) {
+//       selectedMealType = type;
+//       break;
+//     }
+//   }
+
+//   if (!selectedMealType) {
+//     throw new ApiError(
+//       400,
+//       "No valid meal type found (breakfast, lunch, dinner)"
+//     );
+//   }
+
+//   const mealData = meal[selectedMealType];
+
+//   if (!mealData.description || !mealData.caloryCount) {
+//     throw new ApiError(400, "Meal must include description and caloryCount");
+//   }
+
+//   // Check if this mealType already exists in the mealGroup
+//   const existingMeal = await MealModel.findOne({
+//     mealGroupId,
+//     mealType: selectedMealType,
+//   });
+//   if (existingMeal) {
+//     throw new ApiError(
+//       400,
+//       `${selectedMealType} already exists in this meal group`
+//     );
+//   }
+
+//   // Get the date from any existing meal in this mealGroupId
+//   const groupMeal = await MealModel.findOne({ mealGroupId });
+//   const mealDate = groupMeal ? groupMeal.date : new Date();
+
+//   // Build meal payload
+//   const newMeal = new MealModel({
+//     userId,
+//     mealGroupId,
+//     mealType: selectedMealType,
+//     description: mealData.description,
+//     ingredients: mealData.ingredients || [],
+//     caloryCount: mealData.caloryCount,
+//     kcal: mealData.caloryCount.reduce(
+//       (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
+//       0
+//     ),
+//     date: mealDate,
+//   });
+
+//   await newMeal.save();
+
+//   return newMeal;
+// };
+
 export const createSingleMealService = async (req: Request) => {
   const user = req.user as JwtPayloadWithUser;
   const userId = user.id;
   const { mealGroupId } = req.params;
-  const { meal } = req.body;
 
   if (!mealGroupId) {
     throw new ApiError(400, "Meal Group Id is required");
   }
 
+  // ---------------- GET DATE FROM DB (FIX) ----------------
+  const groupMeal: any = await MealModel.findOne({
+    mealGroupId,
+    userId,
+  }).lean();
+
+  if (!groupMeal) {
+    throw new ApiError(404, "Meal group not found");
+  }
+
+  const planDate = dayjs(groupMeal.date).format("YYYY-MM-DD");
+
+  if (!planDate) {
+    throw new ApiError(500, "Meal group date is missing");
+  }
+
+  const today = dayjs().format("YYYY-MM-DD");
+
+  if (dayjs(planDate).isBefore(today)) {
+    throw new ApiError(400, "You cannot update meals for previous days");
+  }
+
+  // ---------------- MEAL DATA ----------------
+  const meal =
+    typeof req.body.meal === "string"
+      ? JSON.parse(req.body.meal)
+      : req.body.meal;
+
   if (!meal || typeof meal !== "object") {
     throw new ApiError(400, "Meal data is required");
   }
 
-  // Determine which mealType is being added (breakfast, lunch, dinner)
+  // ---------------- IMAGE ----------------
+  const file = req.file as Express.Multer.File | undefined;
+  const imagePath = file ? normalizePath(file.path) : null;
+
+  // ---------------- DETECT MEAL TYPE ----------------
   const mealTypes = ["breakfast", "lunch", "dinner"] as const;
-  let selectedMealType: (typeof mealTypes)[number] | null = null;
+  type MealType = (typeof mealTypes)[number];
+
+  let selectedMealType: MealType | null = null;
 
   for (const type of mealTypes) {
-    if (meal[type] !== undefined) {
+    if (meal[type]) {
       selectedMealType = type;
       break;
     }
@@ -527,42 +635,59 @@ export const createSingleMealService = async (req: Request) => {
 
   const mealData = meal[selectedMealType];
 
-  if (!mealData.description || !mealData.caloryCount) {
+  if (!mealData.description || !Array.isArray(mealData.caloryCount)) {
     throw new ApiError(400, "Meal must include description and caloryCount");
   }
 
-  // Check if this mealType already exists in the mealGroup
-  const existingMeal = await MealModel.findOne({
-    mealGroupId,
-    mealType: selectedMealType,
-  });
-  if (existingMeal) {
+  // ---------------- MEAL USAGE VALIDATION ----------------
+  const usage = await MealUsageModel.findOne({ userId });
+
+  if (!usage) {
+    throw new ApiError(400, "Meal usage not found. Create a meal plan first.");
+  }
+
+  const planForDate = usage.mealPlans.find((p) => p.planDate === planDate);
+
+  if (!planForDate) {
+    throw new ApiError(400, "Meal plan for this date does not exist");
+  }
+
+  if (planForDate.meals.includes(selectedMealType)) {
     throw new ApiError(
       400,
-      `${selectedMealType} already exists in this meal group`
+      `${selectedMealType} already exists for ${planDate}`
     );
   }
 
-  // Get the date from any existing meal in this mealGroupId
-  const groupMeal = await MealModel.findOne({ mealGroupId });
-  const mealDate = groupMeal ? groupMeal.date : new Date();
+  // ---------------- UPDATE USAGE (ANTI-DUPLICATE LOCK) ----------------
+  planForDate.meals.push(selectedMealType);
+  planForDate.mealCount = (planForDate.mealCount || 0) + 1;
 
-  // Build meal payload
-  const newMeal = new MealModel({
+  await usage.save();
+
+  // ---------------- CALCULATE KCAL ----------------
+  const totalKcal = mealData.caloryCount.reduce(
+    (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
+    0
+  );
+
+  // ---------------- CREATE MEAL ----------------
+  const newMeal = await MealModel.create({
     userId,
     mealGroupId,
+    planDate, // optional, keep for consistency
     mealType: selectedMealType,
     description: mealData.description,
     ingredients: mealData.ingredients || [],
     caloryCount: mealData.caloryCount,
-    kcal: mealData.caloryCount.reduce(
-      (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
-      0
-    ),
-    date: mealDate,
+    kcal: totalKcal,
+    image: imagePath,
+    date: planDate,
   });
-
-  await newMeal.save();
 
   return newMeal;
 };
+
+cron.schedule("0 06 15 * * *", async () => {
+  console.log(" Running task at 15:05 PM daily...");
+});
