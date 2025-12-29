@@ -7,7 +7,7 @@ import { Types } from "mongoose";
 import dayjs from "dayjs";
 import { MealUsageModel } from "../meal_usage/meal_usage.model";
 import { translateText } from "../../services/translate.service";
-import cron from "node-cron";
+
 // create meal service
 // previous logic
 // export const createMealService = async (req: Request) => {
@@ -687,7 +687,3 @@ export const createSingleMealService = async (req: Request) => {
 
   return newMeal;
 };
-
-cron.schedule("0 06 15 * * *", async () => {
-  console.log(" Running task at 15:05 PM daily...");
-});

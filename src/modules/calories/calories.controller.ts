@@ -1,15 +1,42 @@
 import { Request, Response } from "express";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
-import { addCalorieService } from "./calories.service";
+import cron from "node-cron";
+import { UserModel } from "../user/user.model";
+import axios from "axios";
+import { CalorieModel } from "./calories.model";
 
-export const addCalorie = catchAsync(async (req: Request, res: Response) => {
-  const addCalorie = await addCalorieService(req);
+cron.schedule(
+  "0 0 0 * * *",
+  async () => {
+    console.log("Midnight calorie sync started");
 
-  return sendResponse(res, {
-    statusCode: 201,
-    success: true,
-    message: "Calorie requirement added successfully",
-    data: addCalorie,
-  });
-});
+    const users = await UserModel.find({}, { _id: 1 });
+
+    for (const user of users) {
+      try {
+        const apiResponse = await axios.get(
+          `https://external-api.com/calories/${user._id}`
+        );
+
+        const { totalCalorie, carbs, protein, fat } = apiResponse.data;
+
+        // 🔹 SAVE TO DB
+        await CalorieModel.create({
+          userId: user._id,
+          totalCalorie,
+          carbs,
+          protein,
+          fat,
+        });
+      } catch (error) {
+        console.error(` Failed for user ${user._id}`, error);
+      }
+    }
+
+    console.log(" Midnight calorie sync finished");
+  },
+  {
+    timezone: "Asia/Dhaka",
+  }
+);

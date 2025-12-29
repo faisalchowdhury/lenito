@@ -5,20 +5,22 @@ import { findUserById } from "../user/user.utils";
 import { verifyToken } from "../../utils/JwtToken";
 import catchAsync from "../../utils/catchAsync";
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
+
 import {
-  createSupportService,
+  createReportService,
   findSupportId,
+  getSingleReportService,
+  reportList,
   supportDelete,
-  supportList,
-} from "./support.service";
+  updateReportService,
+} from "./report.service";
 import { emitNotification } from "../../utils/socket";
 import { UserModel } from "../user/user.model";
 import mongoose, { Types } from "mongoose";
 import ApiError from "../../errors/ApiError";
 import paginationBuilder from "../../utils/paginationBuilder";
 
-export const needSupport = catchAsync(async (req: Request, res: Response) => {
+export const needReport = catchAsync(async (req: Request, res: Response) => {
   let decoded;
   try {
     decoded = verifyToken(req.headers.authorization);
@@ -27,12 +29,12 @@ export const needSupport = catchAsync(async (req: Request, res: Response) => {
   }
   const userId = decoded.id as string;
   const userObjectId = new mongoose.Types.ObjectId(userId);
-  const { supportMsg } = req.body;
+  const { message, problem } = req.body;
 
-  if (!supportMsg) {
+  if (!message || !problem) {
     return sendError(res, {
       statusCode: httpStatus.BAD_REQUEST,
-      message: "What kind of support do you want?",
+      message: "Problem and message field are required",
     });
   }
 
@@ -47,15 +49,14 @@ export const needSupport = catchAsync(async (req: Request, res: Response) => {
 
   const name = user.firstName;
   const email = user.email;
-  const msg = supportMsg;
-  await createSupportService(name, email, msg);
+  await createReportService(name, email, problem, message);
 
   // Success response
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message:
-      "Your support request has been received. We will review it and get back to you shortly.",
+      "Your Report request has been received. We will review it and get back to you shortly.",
 
     data: null, // returning the updated user with the supportMsg field updated
   });
@@ -77,10 +78,10 @@ export const needSupport = catchAsync(async (req: Request, res: Response) => {
   //--------------------------> emit function <-------------------------
 });
 
-export const getSupport = catchAsync(async (req: Request, res: Response) => {
+export const getReport = catchAsync(async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
-  const { support, totalSupport } = await supportList(page, limit);
+  const { support, totalSupport } = await reportList(page, limit);
   const pagination = paginationBuilder({
     totalData: totalSupport,
     currentPage: page,
@@ -95,13 +96,7 @@ export const getSupport = catchAsync(async (req: Request, res: Response) => {
     totalItem: pagination.totalData,
   };
   if (support.length === 0) {
-    return sendResponse(res, {
-      statusCode: httpStatus.NO_CONTENT,
-      success: false,
-      message: "No support found in this area",
-      data: [],
-      pagination: patchedPagination,
-    });
+    throw new ApiError(400, "No reports found");
   }
   const responseData = support.map((support) => {
     return {
@@ -109,20 +104,21 @@ export const getSupport = catchAsync(async (req: Request, res: Response) => {
       name: support.name,
       email: support.email,
       msg: support.msg,
+      status: support.status,
       createdAt: support.createdAt,
     };
   });
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "All supports retrived successfully",
+    message: "All reports retrived successfully",
     data: responseData,
     pagination: patchedPagination,
   });
 });
 
-export const deleteSupport = catchAsync(async (req: Request, res: Response) => {
-  const id = req.query?.supportId as string;
+export const deleteReport = catchAsync(async (req: Request, res: Response) => {
+  const id = req.query?.reportId as string;
 
   const support = await findSupportId(id);
 
@@ -131,7 +127,7 @@ export const deleteSupport = catchAsync(async (req: Request, res: Response) => {
     //   statusCode: httpStatus.NOT_FOUND,
     //   message: "support not found .",
     // });
-    throw new ApiError(httpStatus.NOT_FOUND, "support not found .");
+    throw new ApiError(httpStatus.NOT_FOUND, "Report not found .");
   }
 
   if (support.isDeleted) {
@@ -141,7 +137,7 @@ export const deleteSupport = catchAsync(async (req: Request, res: Response) => {
     // });
     throw new ApiError(
       httpStatus.NOT_FOUND,
-      "This support is  already deleted."
+      "This report is  already deleted."
     );
   }
   await supportDelete(id);
@@ -149,7 +145,31 @@ export const deleteSupport = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "support deleted successfully",
+    message: "report deleted successfully",
     data: null,
   });
 });
+
+export const updateReport = catchAsync(async (req: Request, res: Response) => {
+  const updateReport = await updateReportService(req);
+
+  sendResponse(res, {
+    statusCode: 400,
+    success: false,
+    message: "Report status updated successfully",
+    data: null,
+  });
+});
+
+export const getSingleReport = catchAsync(
+  async (req: Request, res: Response) => {
+    const getSingleReport = await getSingleReportService(req);
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Report reterive successfully",
+      data: getSingleReport,
+    });
+  }
+);

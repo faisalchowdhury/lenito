@@ -144,7 +144,9 @@ export const getUnreadBadgeCount = catchAsync(
       msg: notification[config.msgField] || "",
       createdAt: notification.createdAt,
     }));
-    const userInfo = await UserModel.findById(user._id).select("name image");
+    const userInfo = await UserModel.findById(user._id).select(
+      "name phone image"
+    );
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
@@ -233,7 +235,7 @@ export const updateUserStatus = async (
       userMsg: `Your account status has been updated to "${status}" by admin.`,
     });
 
-    // 2. Send push notification (if user has fcmToken)
+    // // 2. Send push notification (if user has fcmToken)
     // if (user.fcmToken) {
     //   await sendPushNotificationToMultiple([user.fcmToken], {
     //     title: "Account Status Changed",

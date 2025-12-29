@@ -54,3 +54,12 @@ export const updateWorkoutStatusService = async (data: Request) => {
 
   return updateWorkoutStatus;
 };
+
+export const deleteWorkoutPlanService = async (data: Request) => {
+  const { workoutPlanId } = data.params;
+  const deleteWorkoutPlan = await WorkoutPlanModel.deleteOne({
+    _id: workoutPlanId,
+  });
+
+  return deleteWorkoutPlan;
+};

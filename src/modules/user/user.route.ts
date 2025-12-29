@@ -62,12 +62,8 @@ router.post("/change-password", guardRole(["admin", "user"]), changePassword);
 // // );
 // // router.get("/me", userVerification, UserController.getAdminInfo);
 
-// // router.post("/admin-login", UserController.adminloginUser);
-// // router.get(
-// //   "/user-list",
-// //   guardRole(["admin", "subadmin"]),
-// //   UserController.getAllUsers
-// // );
+// router.post("/admin-login", UserController.adminloginUser);
+router.get("/user-list", guardRole(["admin"]), UserController.getAllUsers);
 
 // // router.put(
 // //   "/update-admin-info",

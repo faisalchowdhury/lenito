@@ -1,6 +1,10 @@
 import express from "express";
 import { guardRole } from "../../middlewares/roleGuard";
-import { createWorkout, updateWorkoutStatus } from "./workout_plan.controller";
+import {
+  createWorkout,
+  deleteWorkoutPlan,
+  updateWorkoutStatus,
+} from "./workout_plan.controller";
 import { accessControl } from "../../middlewares/accessControl";
 
 const router = express.Router();
@@ -17,4 +21,9 @@ router.patch(
   updateWorkoutStatus
 );
 
+router.delete(
+  "/delete-workout/:workoutPlanId",
+  guardRole(["user"]),
+  deleteWorkoutPlan
+);
 export const WorkoutPlanRoutes = router;

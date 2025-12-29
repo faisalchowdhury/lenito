@@ -1084,37 +1084,37 @@ export const dashboardStats = async (req: Request, res: Response) => {
 //   })();
 // });
 
-export const logoutUser = async (req: Request, res: Response) => {
-  try {
-    const user = req.user as JwtPayloadWithUser;
-    const userId = user.id;
-    const updateLoginStatus = await UserModel.findByIdAndUpdate(
-      userId,
-      { isLogin: false },
-      { new: true, upsert: true }
-    ).select("name phone email  role isLogin");
+// export const logoutUser = async (req: Request, res: Response) => {
+//   try {
+//     const user = req.user as JwtPayloadWithUser;
+//     const userId = user.id;
+//     const updateLoginStatus = await UserModel.findByIdAndUpdate(
+//       userId,
+//       { isLogin: false },
+//       { new: true, upsert: true }
+//     ).select("name phone email  role isLogin");
 
-    const token = generateToken({
-      id: userId,
-      email: updateLoginStatus.email,
-      role: updateLoginStatus.role,
-    });
+//     const token = generateToken({
+//       id: userId,
+//       email: updateLoginStatus.email,
+//       role: updateLoginStatus.role,
+//     });
 
-    return sendResponse(res, {
-      statusCode: 200,
-      success: true,
-      message: "User logout successfully",
-      data: { user: updateLoginStatus, token },
-    });
-  } catch (err) {
-    return sendResponse(res, {
-      statusCode: 400,
-      success: false,
-      message: "Your login failed",
-      data: null,
-    });
-  }
-};
+//     return sendResponse(res, {
+//       statusCode: 200,
+//       success: true,
+//       message: "User logout successfully",
+//       data: { user: updateLoginStatus, token },
+//     });
+//   } catch (err) {
+//     return sendResponse(res, {
+//       statusCode: 400,
+//       success: false,
+//       message: "Your login failed",
+//       data: null,
+//     });
+//   }
+// };
 
 export const getProfileInfo = async (req: Request, res: Response) => {
   const user = req.user as JwtPayloadWithUser;
@@ -1272,7 +1272,7 @@ const UserController = {
   // deleteUser,
   // changePassword,
   // adminloginUser,
-  // getAllUsers,
+  getAllUsers,
 
   // updateAdminInformation,
   // // updateAdminPassword,

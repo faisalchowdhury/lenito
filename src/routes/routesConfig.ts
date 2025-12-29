@@ -3,7 +3,7 @@ import { TermsRoutes } from "../modules/settings/Terms/Terms.route";
 import { AboutRoutes } from "../modules/settings/About/About.route";
 import { PrivacyRoutes } from "../modules/settings/privacy/Privacy.route";
 import { NotificationRoutes } from "../modules/notifications/notification.route";
-import { SupportRoutes } from "../modules/support/support.route";
+import { ReportRoutes } from "../modules/report/report.route";
 
 import {
   AppInstruction,
@@ -17,6 +17,7 @@ import { PlanRoutes } from "../modules/plan/plan.routes";
 import { WorkoutPlanRoutes } from "../modules/workout_plan/workout_plan.routes";
 import { SubscriptionRoutes } from "../modules/subscription/subscription.routes";
 import { StreakRoutes } from "../modules/streak/streak.routes";
+import { ProgressRoutes } from "../modules/progress/progress.routes";
 
 // import { PaymentRoute } from "../modules/unused_payments/payment.route";
 
@@ -29,6 +30,7 @@ export const routesConfig = [
   { path: "workout-plan", handler: WorkoutPlanRoutes },
   { path: "subscription", handler: SubscriptionRoutes },
   { path: "streak", handler: StreakRoutes },
+  { path: "progress", handler: ProgressRoutes },
 
   { path: "terms", handler: TermsRoutes },
   { path: "about", handler: AboutRoutes },
@@ -37,7 +39,7 @@ export const routesConfig = [
 
   // { path: "/api/v1/payment", handler: PaymentRoute },
 
-  { path: "support", handler: SupportRoutes },
+  { path: "report", handler: ReportRoutes },
   { path: "admin", handler: AdminRoutes },
 
   //------>publishing app <--------------
