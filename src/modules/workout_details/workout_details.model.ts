@@ -27,6 +27,10 @@ const workoutSchema = new Schema<IWorkout>({
     enum: ["arms", "upper_body", "abs", "butt", "legs"],
     required: true,
   },
+  desiredWeight: {
+    type: Number,
+    required: true,
+  },
 });
 
 export const WorkoutModel = mongoose.model<IWorkout>(

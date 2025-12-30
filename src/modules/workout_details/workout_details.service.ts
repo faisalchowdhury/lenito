@@ -12,8 +12,14 @@ export const addWorkoutDetailsService = async (data: Request) => {
     throw new ApiError(400, "workout details already added");
   }
 
-  const { bodyShape, activityLevel, prefferedWorkout, goal, focusArea } =
-    data.body;
+  const {
+    bodyShape,
+    activityLevel,
+    prefferedWorkout,
+    goal,
+    focusArea,
+    desiredWeight,
+  } = data.body;
 
   const workoutPayload = {
     userId,
@@ -22,6 +28,7 @@ export const addWorkoutDetailsService = async (data: Request) => {
     prefferedWorkout,
     goal,
     focusArea,
+    desiredWeight,
   };
 
   const workoutDetails = await WorkoutModel.create(workoutPayload);

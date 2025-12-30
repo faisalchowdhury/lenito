@@ -1,6 +1,3 @@
-import { Request, Response } from "express";
-import catchAsync from "../../utils/catchAsync";
-import sendResponse from "../../utils/sendResponse";
 import cron from "node-cron";
 import { UserModel } from "../user/user.model";
 import axios from "axios";
@@ -15,13 +12,10 @@ cron.schedule(
 
     for (const user of users) {
       try {
-        const apiResponse = await axios.get(
-          `https://external-api.com/calories/${user._id}`
-        );
+        const apiResponse = await axios.get(`https://test.com/${user._id}`);
 
         const { totalCalorie, carbs, protein, fat } = apiResponse.data;
 
-        // 🔹 SAVE TO DB
         await CalorieModel.create({
           userId: user._id,
           totalCalorie,

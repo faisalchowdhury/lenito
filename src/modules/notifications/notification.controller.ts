@@ -10,6 +10,7 @@ import { sendPushNotificationToMultiple } from "./pushNotification/pushNotificat
 import paginationBuilder from "../../utils/paginationBuilder";
 import { IUserPayload } from "../../middlewares/roleGuard";
 import { UserModel } from "../user/user.model";
+import { JwtPayloadWithUser } from "../../middlewares/userVerification";
 
 type UserPayload = {
   id: string;
@@ -23,20 +24,13 @@ type UserPayload = {
 const roleNotificationConfig = {
   admin: {
     queryKey: "adminId",
-    selectFields:
-      "adminMsgTittle adminMsg status bookingId createdAt updatedAt",
+    selectFields: "adminMsgTittle adminMsg status  createdAt updatedAt",
     readField: "isAdminRead",
     msgField: "adminMsg",
   },
-  barber: {
+  user: {
     queryKey: "userId",
-    selectFields: "userMsg userMsgTittle status bookingId createdAt updatedAt",
-    readField: "isUserRead",
-    msgField: "userMsg",
-  },
-  customer: {
-    queryKey: "userId",
-    selectFields: "userMsg userMsgTittle status bookingId createdAt updatedAt",
+    selectFields: "userMsg userMsgTittle status  createdAt updatedAt",
     readField: "isUserRead",
     msgField: "userMsg",
   },
@@ -44,9 +38,10 @@ const roleNotificationConfig = {
 
 export const getMyNotification = catchAsync(
   async (req: Request, res: Response) => {
-    const auth = req.user as IUserPayload;
+    const auth = req.user as JwtPayloadWithUser;
     if (!auth) throw new ApiError(httpStatus.UNAUTHORIZED, "Unauthorized");
     const user = await findUserById(auth.id);
+
     console.log("Authenticated User:", user);
     if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found.");
     // Role config

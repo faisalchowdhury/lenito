@@ -6,6 +6,7 @@ import {
   updateWorkoutStatus,
 } from "./workout_plan.controller";
 import { accessControl } from "../../middlewares/accessControl";
+import upload from "../../multer/multer";
 
 const router = express.Router();
 
@@ -13,6 +14,7 @@ router.post(
   "/add-workout",
   guardRole(["user"]),
   accessControl({ forWorkout: true }),
+  upload.any(),
   createWorkout
 );
 router.patch(

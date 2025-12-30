@@ -2,6 +2,8 @@ import { Request } from "express";
 import { JwtPayloadWithUser } from "../../middlewares/userVerification";
 import { MealModel } from "../meal/meal.model";
 import { WorkoutPlanModel } from "../workout_plan/workout_plan.model";
+import { WeightHistoryModel } from "../health_details/health_details.model";
+import { WorkoutModel } from "../workout_details/workout_details.model";
 
 export const processService = async (data: Request) => {
   const user = data.user as JwtPayloadWithUser;
@@ -62,5 +64,28 @@ export const processService = async (data: Request) => {
       WorkoutCompletionPercentage,
     },
     completionPercentage,
+  };
+};
+
+// get weight progress
+
+export const getWeightProgressService = async (data: Request) => {
+  const user = data.user as JwtPayloadWithUser;
+  const userId = user.id;
+  console.log(userId);
+  const currentData: any = await WeightHistoryModel.findOne({ userId })
+    .sort({ date: -1 })
+    .lean();
+
+  const initialData: any = await WeightHistoryModel.findOne({ userId })
+    .sort({ date: 1 })
+    .lean();
+
+  const workoutDetails: any = await WorkoutModel.findOne({ userId });
+
+  return {
+    initialWeight: initialData.weight,
+    currentWeight: currentData.weight,
+    desiredWeight: workoutDetails.desiredWeight,
   };
 };
