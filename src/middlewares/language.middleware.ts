@@ -1,4 +1,3 @@
-// middlewares/language.middleware.ts
 import { Request, Response, NextFunction } from "express";
 
 export const detectLanguage = (

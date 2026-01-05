@@ -11,6 +11,7 @@ import {
 } from "./meal.controller";
 import { accessControl } from "../../middlewares/accessControl";
 import upload from "../../multer/multer";
+import { detectLanguage } from "../../middlewares/language.middleware";
 
 const router = express.Router();
 
@@ -23,9 +24,10 @@ router.post(
     { name: "lunchImage", maxCount: 1 },
     { name: "dinnerImage", maxCount: 1 },
   ]),
+  detectLanguage,
   createMeals
 );
-router.get("/get-meals", guardRole(["user"]), getCurrentMeals);
+router.get("/get-meals", guardRole(["user"]), detectLanguage, getCurrentMeals);
 router.patch(
   "/swap-meal/:mealId",
   guardRole(["user"]),
@@ -37,7 +39,7 @@ router.patch(
   guardRole(["user"]),
   updateMealStatus
 );
-router.get("/get-meal/:mealId", guardRole(["user"]), getMeal);
+router.get("/get-meal/:mealId", guardRole(["user"]), detectLanguage, getMeal);
 
 router.delete("/delete-meal/:mealId", guardRole(["user"]), deleteMeal);
 router.post(

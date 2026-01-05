@@ -49,7 +49,7 @@ router.patch("/profile-update", guardRole(["user"]), updateUser);
 router.get("/my-profile", guardRole(["admin", "user"]), getSelfInfo);
 router.delete("/account-delete", guardRole(["admin"]), deleteUser);
 router.post("/change-password", guardRole(["admin", "user"]), changePassword);
-// // router.post("/resend-otp", UserController.resendOTP);
+router.post("/resend-otp", UserController.resendOTP);
 
 // router.get("/logout", guardRole(["admin", "company"]), logoutUser);
 

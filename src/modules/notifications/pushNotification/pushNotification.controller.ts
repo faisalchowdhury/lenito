@@ -83,7 +83,7 @@ export const sendPushNotificationToMultiple = async (
   try {
     // Filter out invalid tokens
     const validTokens = tokens.filter((token) => !!token);
-
+    7;
     if (validTokens.length === 0) {
       console.log("No valid tokens to send notifications to");
       return { responses: [], successCount: 0, failureCount: 0 };

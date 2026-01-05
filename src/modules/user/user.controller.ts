@@ -82,7 +82,7 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
         success: true,
         message:
           "OTP sent to your email address. Please verify to continue registration.",
-        data: { token, role: "company" },
+        data: { token, role: "user" },
       });
     } catch (backgroundError: any) {
       console.error("Error in background tasks:", backgroundError?.message);
@@ -95,36 +95,36 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
   })();
 });
 
-// const resendOTP = catchAsync(async (req: Request, res: Response) => {
-//   const email = req.body.email;
+const resendOTP = catchAsync(async (req: Request, res: Response) => {
+  const email = req.body.email;
 
-//   const isExist = await UserModel.findOne({ email });
-//   if (!isExist) {
-//     sendResponse(res, {
-//       statusCode: 401,
-//       success: false,
-//       message: "User not found",
-//       data: null,
-//     });
-//   }
+  const isExist = await UserModel.findOne({ email });
+  if (!isExist) {
+    sendResponse(res, {
+      statusCode: 401,
+      success: false,
+      message: "User not found",
+      data: null,
+    });
+  }
 
-//   const otp = generateOTP();
+  const otp = generateOTP();
 
-//   // await UserService.sendPhoneVerification(email, otp);
-//   const now = new Date();
-//   const expiresAt = new Date(now.getTime() + 60 * 1000);
-//   // Save or update the OTP in the database concurrently.
-//   const isExistOtp = await Promise.all([
-//     OTPModel.findOneAndUpdate({ email }, { otp, expiresAt }, { upsert: true }),
-//   ]);
+  // await UserService.sendPhoneVerification(email, otp);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 60 * 1000);
+  // Save or update the OTP in the database concurrently.
+  const isExistOtp = await Promise.all([
+    OTPModel.findOneAndUpdate({ email }, { otp, expiresAt }, { upsert: true }),
+  ]);
 
-//   return sendResponse(res, {
-//     statusCode: 200,
-//     success: false,
-//     message: `Otp sent to this number ${email}`,
-//     data: "",
-//   });
-// });
+  return sendResponse(res, {
+    statusCode: 200,
+    success: false,
+    message: `Otp sent to this number ${email}`,
+    data: "",
+  });
+});
 
 export const loginUser = catchAsync(async (req: Request, res: Response) => {
   const { email, password, fcmToken } = req.body;
@@ -166,13 +166,13 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
     return await saveOTP(email, otp);
   }
 
-  // const isPasswordValid = await argon2.verify(
-  //   user.password as string,
-  //   password
-  // );
-  // if (!isPasswordValid) {
-  //   throw new ApiError(401, "Wrong password!");
-  // }
+  const isPasswordValid = await argon2.verify(
+    user.password as string,
+    password
+  );
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Wrong password!");
+  }
 
   const token = generateToken({
     id: userId,
@@ -1262,7 +1262,7 @@ const UserController = {
   registerUser,
   // getAllCustomers,
   // searchSubadmin,
-  // resendOTP,
+  resendOTP,
   // loginUser,
   // forgotPassword,
   // resetPassword,

@@ -19,7 +19,7 @@ export const createPlan = catchAsync(async (req: Request, res: Response) => {
 
 // get plans
 export const getPlans = catchAsync(async (req: Request, res: Response) => {
-  const getPlans = await getPlanService();
+  const getPlans = await getPlanService(req);
   return sendResponse(res, {
     statusCode: 200,
     success: true,

@@ -137,176 +137,176 @@ import { translateText } from "../../services/translate.service";
 const normalizePath = (path: string) =>
   path.replace(/\\/g, "/").replace("public", "");
 
-export const createMealService = async (req: Request) => {
-  const user = req.user as JwtPayloadWithUser;
-  const subscription = (req as any).subscription;
+// export const createMealService = async (req: Request) => {
+//   const user = req.user as JwtPayloadWithUser;
+//   const subscription = (req as any).subscription;
 
-  const userId = user.id;
+//   const userId = user.id;
 
-  // 🔹 meals comes as STRING from form-data
-  const meals =
-    typeof req.body.meals === "string"
-      ? JSON.parse(req.body.meals)
-      : req.body.meals;
+//   // 🔹 meals comes as STRING from form-data
+//   const meals =
+//     typeof req.body.meals === "string"
+//       ? JSON.parse(req.body.meals)
+//       : req.body.meals;
 
-  const date = req.body.date;
-  const dateStr = dayjs(date).format("YYYY-MM-DD");
-  const todayStr = dayjs().format("YYYY-MM-DD");
+//   const date = req.body.date;
+//   const dateStr = dayjs(date).format("YYYY-MM-DD");
+//   const todayStr = dayjs().format("YYYY-MM-DD");
 
-  // ---------------- FILES ----------------
-  const files = req.files as {
-    breakfastImage?: Express.Multer.File[];
-    lunchImage?: Express.Multer.File[];
-    dinnerImage?: Express.Multer.File[];
-  };
+//   // ---------------- FILES ----------------
+//   const files = req.files as {
+//     breakfastImage?: Express.Multer.File[];
+//     lunchImage?: Express.Multer.File[];
+//     dinnerImage?: Express.Multer.File[];
+//   };
 
-  const imageMap: Record<string, string | null> = {
-    breakfast: files?.breakfastImage?.[0]?.path
-      ? normalizePath(files.breakfastImage[0].path)
-      : null,
+//   const imageMap: Record<string, string | null> = {
+//     breakfast: files?.breakfastImage?.[0]?.path
+//       ? normalizePath(files.breakfastImage[0].path)
+//       : null,
 
-    lunch: files?.lunchImage?.[0]?.path
-      ? normalizePath(files.lunchImage[0].path)
-      : null,
+//     lunch: files?.lunchImage?.[0]?.path
+//       ? normalizePath(files.lunchImage[0].path)
+//       : null,
 
-    dinner: files?.dinnerImage?.[0]?.path
-      ? normalizePath(files.dinnerImage[0].path)
-      : null,
-  };
+//     dinner: files?.dinnerImage?.[0]?.path
+//       ? normalizePath(files.dinnerImage[0].path)
+//       : null,
+//   };
 
-  // ---------------- DATE VALIDATION ----------------
-  if (dayjs(dateStr).isBefore(todayStr)) {
-    throw new ApiError(400, "You cannot plan meals for previous days");
-  }
+//   // ---------------- DATE VALIDATION ----------------
+//   if (dayjs(dateStr).isBefore(todayStr)) {
+//     throw new ApiError(400, "You cannot plan meals for previous days");
+//   }
 
-  if (subscription) {
-    const subStart = dayjs(subscription.startDate).format("YYYY-MM-DD");
-    const subEnd = dayjs(subscription.endDate).format("YYYY-MM-DD");
+//   if (subscription) {
+//     const subStart = dayjs(subscription.startDate).format("YYYY-MM-DD");
+//     const subEnd = dayjs(subscription.endDate).format("YYYY-MM-DD");
 
-    if (dayjs(dateStr).isBefore(subStart)) {
-      throw new ApiError(
-        400,
-        "You cannot plan meals before your subscription start date"
-      );
-    }
+//     if (dayjs(dateStr).isBefore(subStart)) {
+//       throw new ApiError(
+//         400,
+//         "You cannot plan meals before your subscription start date"
+//       );
+//     }
 
-    if (dayjs(dateStr).isAfter(subEnd)) {
-      throw new ApiError(
-        400,
-        "Your subscription has expired. Please renew to plan meals"
-      );
-    }
-  }
+//     if (dayjs(dateStr).isAfter(subEnd)) {
+//       throw new ApiError(
+//         400,
+//         "Your subscription has expired. Please renew to plan meals"
+//       );
+//     }
+//   }
 
-  // ---------------- PLAN LIMITS ----------------
-  const weeklyLimit = subscription?.planId?.limits?.mealsPerWeek ?? 1;
-  const monthlyLimit = subscription?.planId?.limits?.mealsPerMonth ?? 4;
+//   // ---------------- PLAN LIMITS ----------------
+//   const weeklyLimit = subscription?.planId?.limits?.mealsPerWeek ?? 1;
+//   const monthlyLimit = subscription?.planId?.limits?.mealsPerMonth ?? 4;
 
-  // ---------------- SELECTED MEALS ----------------
-  const ALLOWED_MEALS = ["breakfast", "lunch", "dinner"] as const;
-  type MealType = (typeof ALLOWED_MEALS)[number];
+//   // ---------------- SELECTED MEALS ----------------
+//   const ALLOWED_MEALS = ["breakfast", "lunch", "dinner"] as const;
+//   type MealType = (typeof ALLOWED_MEALS)[number];
 
-  const selectedMeals: MealType[] = Object.keys(meals).filter(
-    (m): m is MealType =>
-      ALLOWED_MEALS.includes(m as MealType) &&
-      Array.isArray(meals[m]) &&
-      meals[m].length > 0
-  );
+//   const selectedMeals: MealType[] = Object.keys(meals).filter(
+//     (m): m is MealType =>
+//       ALLOWED_MEALS.includes(m as MealType) &&
+//       Array.isArray(meals[m]) &&
+//       meals[m].length > 0
+//   );
 
-  if (selectedMeals.length === 0) {
-    throw new ApiError(400, "No meals selected");
-  }
+//   if (selectedMeals.length === 0) {
+//     throw new ApiError(400, "No meals selected");
+//   }
 
-  // ---------------- MEAL USAGE ----------------
-  let usage = await MealUsageModel.findOne({ userId });
-  if (!usage) {
-    usage = new MealUsageModel({ userId, mealPlans: [] });
-  }
+//   // ---------------- MEAL USAGE ----------------
+//   let usage = await MealUsageModel.findOne({ userId });
+//   if (!usage) {
+//     usage = new MealUsageModel({ userId, mealPlans: [] });
+//   }
 
-  const existingPlan = usage.mealPlans.find((p) => p.planDate === dateStr);
-  if (existingPlan) {
-    throw new ApiError(400, "Meal plan for this day already exists");
-  }
+//   const existingPlan = usage.mealPlans.find((p) => p.planDate === dateStr);
+//   if (existingPlan) {
+//     throw new ApiError(400, "Meal plan for this day already exists");
+//   }
 
-  // ---------------- WEEKLY LIMIT ----------------
-  const weekStart = dayjs(dateStr).startOf("week").format("YYYY-MM-DD");
-  const weekEnd = dayjs(dateStr).endOf("week").format("YYYY-MM-DD");
+//   // ---------------- WEEKLY LIMIT ----------------
+//   const weekStart = dayjs(dateStr).startOf("week").format("YYYY-MM-DD");
+//   const weekEnd = dayjs(dateStr).endOf("week").format("YYYY-MM-DD");
 
-  const weeklyPlans = usage.mealPlans.filter(
-    (p) => p.planDate >= weekStart && p.planDate <= weekEnd
-  );
+//   const weeklyPlans = usage.mealPlans.filter(
+//     (p) => p.planDate >= weekStart && p.planDate <= weekEnd
+//   );
 
-  const weeklyMealCount = weeklyPlans.reduce(
-    (sum, p) => sum + (p.mealCount ?? p.meals.length),
-    0
-  );
+//   const weeklyMealCount = weeklyPlans.reduce(
+//     (sum, p) => sum + (p.mealCount ?? p.meals.length),
+//     0
+//   );
 
-  if (weeklyMealCount + selectedMeals.length > weeklyLimit) {
-    throw new ApiError(403, `Weekly meal limit reached (${weeklyLimit})`);
-  }
+//   if (weeklyMealCount + selectedMeals.length > weeklyLimit) {
+//     throw new ApiError(403, `Weekly meal limit reached (${weeklyLimit})`);
+//   }
 
-  // ---------------- MONTHLY LIMIT ----------------
-  const monthStart = dayjs(dateStr).startOf("month").format("YYYY-MM-DD");
-  const monthEnd = dayjs(dateStr).endOf("month").format("YYYY-MM-DD");
+//   // ---------------- MONTHLY LIMIT ----------------
+//   const monthStart = dayjs(dateStr).startOf("month").format("YYYY-MM-DD");
+//   const monthEnd = dayjs(dateStr).endOf("month").format("YYYY-MM-DD");
 
-  const monthlyPlans = usage.mealPlans.filter(
-    (p) => p.planDate >= monthStart && p.planDate <= monthEnd
-  );
+//   const monthlyPlans = usage.mealPlans.filter(
+//     (p) => p.planDate >= monthStart && p.planDate <= monthEnd
+//   );
 
-  const monthlyMealCount = monthlyPlans.reduce(
-    (sum, p) => sum + (p.mealCount ?? p.meals.length),
-    0
-  );
+//   const monthlyMealCount = monthlyPlans.reduce(
+//     (sum, p) => sum + (p.mealCount ?? p.meals.length),
+//     0
+//   );
 
-  if (monthlyMealCount + selectedMeals.length > monthlyLimit) {
-    throw new ApiError(403, `Monthly meal limit reached (${monthlyLimit})`);
-  }
+//   if (monthlyMealCount + selectedMeals.length > monthlyLimit) {
+//     throw new ApiError(403, `Monthly meal limit reached (${monthlyLimit})`);
+//   }
 
-  // ---------------- SAVE USAGE ----------------
-  usage.mealPlans.push({
-    planDate: dateStr,
-    meals: selectedMeals,
-    mealCount: selectedMeals.length,
-  });
+//   // ---------------- SAVE USAGE ----------------
+//   usage.mealPlans.push({
+//     planDate: dateStr,
+//     meals: selectedMeals,
+//     mealCount: selectedMeals.length,
+//   });
 
-  await usage.save();
+//   await usage.save();
 
-  // ---------------- CREATE MEALS ----------------
-  const mealGroupId = uniqid();
-  const mealDocs: any[] = [];
+//   // ---------------- CREATE MEALS ----------------
+//   const mealGroupId = uniqid();
+//   const mealDocs: any[] = [];
 
-  for (const mealType of selectedMeals) {
-    for (const meal of meals[mealType]) {
-      const caloryCount = Array.isArray(meal.caloryCount)
-        ? meal.caloryCount.map((i: any) => ({
-            label: i.label,
-            kcal: i.kcal,
-          }))
-        : [];
+//   for (const mealType of selectedMeals) {
+//     for (const meal of meals[mealType]) {
+//       const caloryCount = Array.isArray(meal.caloryCount)
+//         ? meal.caloryCount.map((i: any) => ({
+//             label: i.label,
+//             kcal: i.kcal,
+//           }))
+//         : [];
 
-      const totalKcal = caloryCount.reduce(
-        (sum: number, i: any) => sum + i.kcal,
-        0
-      );
+//       const totalKcal = caloryCount.reduce(
+//         (sum: number, i: any) => sum + i.kcal,
+//         0
+//       );
 
-      mealDocs.push({
-        userId,
-        mealGroupId,
-        planDate: dateStr,
-        mealType,
-        description: meal.description,
-        ingredients: meal.ingredients || [],
-        caloryCount,
-        image: imageMap[mealType], // ✅ LOCAL IMAGE PATH
-        date,
-        kcal: totalKcal,
-      });
-    }
-  }
+//       mealDocs.push({
+//         userId,
+//         mealGroupId,
+//         planDate: dateStr,
+//         mealType,
+//         description: meal.description,
+//         ingredients: meal.ingredients || [],
+//         caloryCount,
+//         image: imageMap[mealType], // ✅ LOCAL IMAGE PATH
+//         date,
+//         kcal: totalKcal,
+//       });
+//     }
+//   }
 
-  const savedMeals = await MealModel.insertMany(mealDocs);
-  return savedMeals;
-};
+//   const savedMeals = await MealModel.insertMany(mealDocs);
+//   return savedMeals;
+// };
 
 // get current date meals service
 
@@ -337,18 +337,200 @@ export const createMealService = async (req: Request) => {
 //   }
 // };
 
+// export const getCurrentMealsService = async (req: any) => {
+//   try {
+//     const user = req.user as JwtPayloadWithUser;
+//     const userId = user.id;
+//     const lang = req.headers["accept-language"] || "en";
+
+//     const today = dayjs().format("YYYY-MM-DD");
+
+//     // Fetch meals for today
+//     const meals = await MealModel.find({ userId, date: today }).lean();
+
+//     // Default response structure
+//     const mealPlan: Record<string, any | null> = {
+//       breakfast: null,
+//       lunch: null,
+//       dinner: null,
+//     };
+
+//     for (const meal of meals) {
+//       const mealAny: any = meal;
+//       const translatedMeal: any = { ...mealAny };
+
+//       //  Translate only text fields
+//       if (lang !== "en") {
+//         if (mealAny.description) {
+//           translatedMeal.description = await translateText(
+//             mealAny.description,
+//             lang
+//           );
+//         }
+
+//         if (mealAny.mealName) {
+//           translatedMeal.mealName = await translateText(mealAny.mealName, lang);
+//         }
+
+//         if (Array.isArray(mealAny.ingredients)) {
+//           translatedMeal.ingredients = await Promise.all(
+//             mealAny.ingredients.map((item: string) => translateText(item, lang))
+//           );
+//         }
+//       }
+
+//       mealPlan[mealAny.mealType] = translatedMeal;
+//     }
+
+//     return mealPlan;
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+export const createMealService = async (req: any) => {
+  const user = req.user as JwtPayloadWithUser;
+  const subscription = req.subscription;
+  const lang = req.lang || "en";
+
+  const userId = user.id;
+
+  // meals comes as STRING from form-data
+  const meals =
+    typeof req.body.meals === "string"
+      ? JSON.parse(req.body.meals)
+      : req.body.meals;
+
+  const date = req.body.date;
+  const dateStr = dayjs(date).format("YYYY-MM-DD");
+  const todayStr = dayjs().format("YYYY-MM-DD");
+
+  // ---------------- FILES ----------------
+  const files = req.files as {
+    breakfastImage?: Express.Multer.File[];
+    lunchImage?: Express.Multer.File[];
+    dinnerImage?: Express.Multer.File[];
+  };
+
+  const imageMap: Record<string, string | null> = {
+    breakfast: files?.breakfastImage?.[0]?.path
+      ? normalizePath(files.breakfastImage[0].path)
+      : null,
+    lunch: files?.lunchImage?.[0]?.path
+      ? normalizePath(files.lunchImage[0].path)
+      : null,
+    dinner: files?.dinnerImage?.[0]?.path
+      ? normalizePath(files.dinnerImage[0].path)
+      : null,
+  };
+
+  // ---------------- DATE VALIDATION ----------------
+  if (dayjs(dateStr).isBefore(todayStr)) {
+    throw new ApiError(400, "You cannot plan meals for previous days");
+  }
+
+  // ---------------- PLAN LIMITS ----------------
+  const weeklyLimit = subscription?.planId?.limits?.mealsPerWeek ?? 1;
+  const monthlyLimit = subscription?.planId?.limits?.mealsPerMonth ?? 4;
+
+  // ---------------- SELECTED MEALS ----------------
+  const ALLOWED_MEALS = ["breakfast", "lunch", "dinner"] as const;
+  type MealType = (typeof ALLOWED_MEALS)[number];
+
+  const selectedMeals: MealType[] = Object.keys(meals).filter(
+    (m): m is MealType =>
+      ALLOWED_MEALS.includes(m as MealType) &&
+      Array.isArray(meals[m]) &&
+      meals[m].length > 0
+  );
+
+  if (!selectedMeals.length) {
+    throw new ApiError(400, "No meals selected");
+  }
+
+  // ----------------  NORMALIZE INPUT TO ENGLISH ----------------
+  if (lang !== "en") {
+    for (const mealType of selectedMeals) {
+      for (const meal of meals[mealType]) {
+        if (meal.description) {
+          meal.description = await translateText(meal.description, "en");
+        }
+
+        if (Array.isArray(meal.ingredients)) {
+          meal.ingredients = await Promise.all(
+            meal.ingredients.map((i: string) => translateText(i, "en"))
+          );
+        }
+
+        if (Array.isArray(meal.caloryCount)) {
+          for (const c of meal.caloryCount) {
+            c.label = await translateText(c.label, "en");
+          }
+        }
+      }
+    }
+  }
+
+  // ---------------- CREATE MEALS ----------------
+  const mealGroupId = uniqid();
+  const mealDocs: any[] = [];
+
+  for (const mealType of selectedMeals) {
+    for (const meal of meals[mealType]) {
+      const caloryCount = meal.caloryCount || [];
+      const totalKcal = caloryCount.reduce(
+        (sum: number, i: any) => sum + i.kcal,
+        0
+      );
+
+      mealDocs.push({
+        userId,
+        mealGroupId,
+        planDate: dateStr,
+        mealType,
+        description: meal.description,
+        ingredients: meal.ingredients || [],
+        caloryCount,
+        image: imageMap[mealType],
+        date,
+        kcal: totalKcal,
+      });
+    }
+  }
+
+  const savedMeals = await MealModel.insertMany(mealDocs);
+
+  // ----------------  TRANSLATE RESPONSE ----------------
+  if (lang !== "en") {
+    for (const meal of savedMeals) {
+      meal.description = await translateText(meal.description, lang);
+
+      if (Array.isArray(meal.ingredients)) {
+        meal.ingredients = await Promise.all(
+          meal.ingredients.map((i: string) => translateText(i, lang))
+        );
+      }
+
+      if (Array.isArray(meal.caloryCount)) {
+        for (const c of meal.caloryCount) {
+          c.label = await translateText(c.label, lang);
+        }
+      }
+    }
+  }
+
+  return savedMeals;
+};
+
 export const getCurrentMealsService = async (req: any) => {
   try {
     const user = req.user as JwtPayloadWithUser;
     const userId = user.id;
-    const lang = req.headers["accept-language"] || "en";
+    const lang = req.lang || "en";
 
     const today = dayjs().format("YYYY-MM-DD");
 
-    // Fetch meals for today
     const meals = await MealModel.find({ userId, date: today }).lean();
 
-    // Default response structure
     const mealPlan: Record<string, any | null> = {
       breakfast: null,
       lunch: null,
@@ -356,30 +538,28 @@ export const getCurrentMealsService = async (req: any) => {
     };
 
     for (const meal of meals) {
-      const mealAny: any = meal;
-      const translatedMeal: any = { ...mealAny };
+      const translatedMeal = { ...meal };
 
-      //  Translate only text fields
       if (lang !== "en") {
-        if (mealAny.description) {
+        if (meal.description) {
           translatedMeal.description = await translateText(
-            mealAny.description,
+            meal.description,
             lang
           );
         }
 
-        if (mealAny.mealName) {
-          translatedMeal.mealName = await translateText(mealAny.mealName, lang);
-        }
-
-        if (Array.isArray(mealAny.ingredients)) {
+        // Translate ingredients array
+        if (Array.isArray(meal.ingredients)) {
           translatedMeal.ingredients = await Promise.all(
-            mealAny.ingredients.map((item: string) => translateText(item, lang))
+            meal.ingredients.map((item: string) => translateText(item, lang))
           );
         }
+
+        //  DO NOT translate:
+        // mealType, kcal, image, date, ids
       }
 
-      mealPlan[mealAny.mealType] = translatedMeal;
+      mealPlan[meal.mealType] = translatedMeal;
     }
 
     return mealPlan;
@@ -474,16 +654,54 @@ export const updateMealStatusService = async (data: Request) => {
   return updateStatus;
 };
 
-export const getMealService = async (data: Request) => {
-  const { mealId } = data.params;
+// export const getMealService = async (data: Request) => {
+//   const { mealId } = data.params;
 
-  const getMeal = await MealModel.findOne({ _id: mealId });
+//   const getMeal = await MealModel.findOne({ _id: mealId });
 
-  if (!getMeal) {
+//   if (!getMeal) {
+//     throw new ApiError(400, "Meal not found");
+//   }
+
+//   return getMeal;
+// };
+
+export const getMealService = async (req: any) => {
+  const { mealId } = req.params;
+  const lang = req.lang || "en";
+
+  const meal = await MealModel.findOne({ _id: mealId }).lean();
+
+  if (!meal) {
     throw new ApiError(400, "Meal not found");
   }
 
-  return getMeal;
+  // ---------------- TRANSLATION ----------------
+  if (lang !== "en") {
+    // description
+    if (meal.description) {
+      meal.description = await translateText(meal.description, lang);
+    }
+
+    // ingredients
+    if (Array.isArray(meal.ingredients)) {
+      meal.ingredients = await Promise.all(
+        meal.ingredients.map((item: string) => translateText(item, lang))
+      );
+    }
+
+    // caloryCount labels
+    if (Array.isArray(meal.caloryCount)) {
+      meal.caloryCount = await Promise.all(
+        meal.caloryCount.map(async (c: any) => ({
+          ...c,
+          label: c.label ? await translateText(c.label, lang) : c.label,
+        }))
+      );
+    }
+  }
+
+  return meal;
 };
 
 export const deleteMealService = async (data: Request) => {
