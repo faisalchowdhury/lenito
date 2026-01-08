@@ -28,9 +28,9 @@ class ApiError extends Error {
     statusCode: number,
     message: string,
     errorDetails?: { path?: string | null; value?: any },
-    isOperational = true,
+    isOperational = true
   ) {
-    super(`⛔ ${message} ⛔`);
+    super(`${message}`);
     // console.log(statusCode, "-------->4");
     this.statusCode = statusCode;
     this.isOperational = isOperational;

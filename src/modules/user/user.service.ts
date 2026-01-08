@@ -32,7 +32,7 @@ export const registerUserService = async (data: any) => {
   const existingUser = await UserModel.findOne({ email });
 
   if (existingUser) {
-    throw new Error("This emails is already registered");
+    throw new ApiError(400, "User already exist");
   }
   const hashedPassword = await hashPassword(password);
   // Create new user

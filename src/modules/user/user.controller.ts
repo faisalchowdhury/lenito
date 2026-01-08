@@ -98,7 +98,7 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
 const resendOTP = catchAsync(async (req: Request, res: Response) => {
   const email = req.body.email;
 
-  const isExist = await UserModel.findOne({ email });
+  const isExist: any = await UserModel.findOne({ email });
   if (!isExist) {
     sendResponse(res, {
       statusCode: 401,
@@ -109,7 +109,7 @@ const resendOTP = catchAsync(async (req: Request, res: Response) => {
   }
 
   const otp = generateOTP();
-
+  await sendOTPEmailRegister(isExist.firstName, email, String(otp));
   // await UserService.sendPhoneVerification(email, otp);
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 60 * 1000);
@@ -120,8 +120,8 @@ const resendOTP = catchAsync(async (req: Request, res: Response) => {
 
   return sendResponse(res, {
     statusCode: 200,
-    success: false,
-    message: `Otp sent to this number ${email}`,
+    success: true,
+    message: `Otp sent to this email ${email}`,
     data: "",
   });
 });
@@ -213,22 +213,22 @@ export const forgotPassword = catchAsync(
 
     const now = new Date();
     // Check if there's a pending OTP request and if the 2-minute cooldown has passed
-    const otpRecord = await OTPModel.findOne({ email });
-    if (otpRecord && otpRecord.expiresAt > now) {
-      const remainingTime = Math.floor(
-        (otpRecord.expiresAt.getTime() - now.getTime()) / 1000
-      );
+    // const otpRecord = await OTPModel.findOne({ email });
+    // if (otpRecord && otpRecord.expiresAt > now) {
+    //   const remainingTime = Math.floor(
+    //     (otpRecord.expiresAt.getTime() - now.getTime()) / 1000
+    //   );
 
-      throw new ApiError(
-        403,
-        `You can't request another OTP before ${remainingTime} seconds.`
-      );
-    }
+    //   throw new ApiError(
+    //     403,
+    //     `You can't request another OTP before ${remainingTime} seconds.`
+    //   );
+    // }
     const token = generateRegisterToken({ email });
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: "OTP sent to your phone number. Please check!",
+      message: "OTP sent to your email. Please check!",
       data: { token },
     });
     const otp = generateOTP();
