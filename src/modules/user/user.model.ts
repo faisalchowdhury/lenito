@@ -8,7 +8,7 @@ const userSchema = new Schema<IUser>(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true, index: true },
     contactNumber: { type: String, required: true },
     role: {
       type: String,
@@ -16,6 +16,7 @@ const userSchema = new Schema<IUser>(
       default: "user",
     },
     password: { type: String, required: true },
+    image: { type: String },
     isVerified: { type: Boolean, required: true, default: false },
     isDeleted: { type: Boolean, required: true, default: false },
   },
@@ -39,7 +40,7 @@ const userSchema = new Schema<IUser>(
 
 export const UserModel = mongoose.model<IUser>("User", userSchema);
 
-// UserSchema.index({ name: "text" });
+// userSchema.index({ name: "text" });
 // UserSchema.index({ createdAt: 1 });
 // UserModel.schema.index({ role: 1 });
 

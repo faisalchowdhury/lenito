@@ -186,7 +186,7 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
     data: {
       user: {
         _id: user._id,
-        name: user?.firstName,
+        name: user?.firstName + " " + user?.lastName,
         email: user?.email,
         role: user?.role,
       },
@@ -308,45 +308,53 @@ export const verifyOTP = catchAsync(async (req: Request, res: Response) => {
 
 // User Id
 export const updateUser = catchAsync(async (req: Request, res: Response) => {
-  try {
-    const { firstName, lastName, email, contactNumber } = req.body;
+  const { firstName, lastName, email, contactNumber } = req.body;
 
-    const decoded = req.user as IUserPayload;
-    console.log(decoded);
-    const userId = decoded.id as string;
-    const user = await findUserById(userId);
-    if (!user) {
-      throw new ApiError(404, "User not found.");
+  const decoded = req.user as IUserPayload;
+  const userId = decoded.id;
+
+  const user = await findUserById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found.");
+  }
+
+  const updateData: any = {};
+
+  if (firstName) updateData.firstName = firstName;
+  if (lastName) updateData.lastName = lastName;
+  if (contactNumber) updateData.contactNumber = contactNumber;
+
+  // Email update – SAFE way
+  if (email && email !== user.email) {
+    const emailExists = await UserModel.findOne({
+      email,
+      _id: { $ne: userId },
+    });
+
+    if (emailExists) {
+      throw new ApiError(409, "Email already in use.");
     }
 
-    const updateData: any = {
-      firstName,
-      lastName,
-      email,
-      contactNumber,
-    };
+    updateData.email = email;
+  }
 
-    const updatedUser = await UserService.updateUserById(userId, updateData);
+  if (req.file) {
+    updateData.image = `/image/${req.file.filename}`;
+  }
 
-    const responseData = {
+  console.log(userId);
+  const updatedUser = await UserService.updateUserById(userId, updateData);
+
+  return sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Profile updated.",
+    data: {
       _id: updatedUser?._id,
       name: `${updatedUser?.firstName} ${updatedUser?.lastName}`,
       email: updatedUser?.email,
-    };
-    if (updatedUser) {
-      return sendResponse(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: "Profile updated.",
-        data: responseData,
-      });
-    }
-  } catch (error: any) {
-    throw new ApiError(
-      error.statusCode || 500,
-      error.message || "Unexpected error occurred while updating user."
-    );
-  }
+    },
+  });
 });
 
 export const getSelfInfo = catchAsync(async (req: Request, res: Response) => {
@@ -368,6 +376,7 @@ export const getSelfInfo = catchAsync(async (req: Request, res: Response) => {
       lastName: user.lastName,
       email: user.email,
       contactNumber: user.contactNumber,
+      image: user.image || null,
       role: user.role,
     };
 
@@ -388,6 +397,29 @@ export const getSelfInfo = catchAsync(async (req: Request, res: Response) => {
   }
 });
 
+export const uploadProfilePicture = catchAsync(
+  async (req: Request, res: Response) => {
+    const user = req.user as JwtPayloadWithUser;
+    const userId = user.id;
+    const payload: any = {};
+    if (req.file) {
+      payload.image = `/image/${req.file.filename}`;
+    }
+
+    const uploadImage = await UserModel.findOneAndUpdate(
+      { _id: userId },
+      payload
+    );
+
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Image uploaded successfully",
+      data: uploadImage,
+    });
+  }
+);
+
 // delete user
 export const deleteUser = catchAsync(async (req: Request, res: Response) => {
   try {
@@ -399,10 +431,7 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
     if (deleteableuser.isDeleted) {
       throw new ApiError(404, "This account is already deleted.");
     }
-    if (
-      (req.user as IUserPayload)?.id !== id ||
-      (req.user as IUserPayload)?.role !== "admin"
-    ) {
+    if ((req.user as IUserPayload)?.id !== id) {
       throw new ApiError(
         403,
         "You cannot delete this account. Please contact support"

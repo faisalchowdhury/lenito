@@ -125,7 +125,14 @@ const updateUserById = async (
   id: string,
   updateData: Partial<IUser>
 ): Promise<IUser | null> => {
-  return UserModel.findByIdAndUpdate(id, updateData, { new: true });
+  return UserModel.findByIdAndUpdate(
+    id,
+    { $set: updateData },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
 };
 
 /**

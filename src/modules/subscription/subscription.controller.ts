@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { JwtPayloadWithUser } from "../../middlewares/userVerification";
 import { PlanModel } from "../plan/plan.model";
 import { SubscriptionModel } from "./subscription.model";
+import sendResponse from "../../utils/sendResponse";
 
 export const createSubscription = async (req: Request, res: Response) => {
   try {
@@ -222,5 +223,23 @@ export const upgradeSubscription = async (req: Request, res: Response) => {
       success: false,
       message: "Failed to upgrade subscription",
     });
+  }
+};
+
+export const getSubscriptions = async (req: Request, res: Response) => {
+  try {
+    const user = req.user as JwtPayloadWithUser;
+    const userId = user.id;
+
+    const getSubscriptions = await SubscriptionModel.find();
+
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Subscription plan reterive successfully",
+      data: getSubscriptions,
+    });
+  } catch (err) {
+    console.log(err);
   }
 };

@@ -18,6 +18,7 @@ import { WorkoutPlanRoutes } from "../modules/workout_plan/workout_plan.routes";
 import { SubscriptionRoutes } from "../modules/subscription/subscription.routes";
 import { StreakRoutes } from "../modules/streak/streak.routes";
 import { ProgressRoutes } from "../modules/progress/progress.routes";
+import { FaqRoutes } from "../modules/faq/FAQ.router";
 
 // import { PaymentRoute } from "../modules/unused_payments/payment.route";
 
@@ -31,6 +32,7 @@ export const routesConfig = [
   { path: "subscription", handler: SubscriptionRoutes },
   { path: "streak", handler: StreakRoutes },
   { path: "progress", handler: ProgressRoutes },
+  { path: "faq", handler: FaqRoutes },
 
   { path: "terms", handler: TermsRoutes },
   { path: "about", handler: AboutRoutes },

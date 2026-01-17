@@ -13,6 +13,7 @@ export interface IUser extends Document {
   contactNumber: string;
   role: string;
   password: string;
+  image?: string;
   isVerified: boolean;
   isDeleted: boolean;
 }
