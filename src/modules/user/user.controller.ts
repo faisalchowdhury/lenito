@@ -130,7 +130,7 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
   const { email, password, fcmToken } = req.body;
 
   const user = await UserModel.findOne({ email });
-
+  console.log(email);
   if (!user) {
     throw new ApiError(401, "This account does not exist.");
   }
@@ -168,7 +168,7 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
 
   const isPasswordValid = await argon2.verify(
     user.password as string,
-    password
+    password,
   );
   if (!isPasswordValid) {
     throw new ApiError(401, "Wrong password!");
@@ -237,7 +237,7 @@ export const forgotPassword = catchAsync(
     await sendOTPEmailRegister(user.firstName, email, otp);
     await saveOTP(email, otp);
     // await saveOTP(email, otp); // Save OTP with expiration
-  }
+  },
 );
 
 export const resetPassword = catchAsync(async (req: Request, res: Response) => {
@@ -270,7 +270,7 @@ export const resetPassword = catchAsync(async (req: Request, res: Response) => {
   if (!user) {
     throw new ApiError(
       404,
-      "User not found. Are you attempting something sneaky?"
+      "User not found. Are you attempting something sneaky?",
     );
   }
   const newPassword = await hashPassword(password);
@@ -284,7 +284,7 @@ export const verifyOTP = catchAsync(async (req: Request, res: Response) => {
   try {
     const { token, name, email } = await UserService.verifyOTPService(
       otp,
-      req.headers.authorization as string
+      req.headers.authorization as string,
     );
 
     const user = (await UserModel.findOne({ email })) as any;
@@ -324,22 +324,22 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
   if (lastName) updateData.lastName = lastName;
   if (contactNumber) updateData.contactNumber = contactNumber;
 
-  // Email update – SAFE way
-  if (email && email !== user.email) {
-    const emailExists = await UserModel.findOne({
-      email,
-      _id: { $ne: userId },
-    });
+  // // Email update – SAFE way
+  // if (email && email !== user.email) {
+  //   const emailExists = await UserModel.findOne({
+  //     email,
+  //     _id: { $ne: userId },
+  //   });
 
-    if (emailExists) {
-      throw new ApiError(409, "Email already in use.");
-    }
+  //   if (emailExists) {
+  //     throw new ApiError(409, "Email already in use.");
+  //   }
 
-    updateData.email = email;
-  }
+  //   updateData.email = email;
+  // }
 
   if (req.file) {
-    updateData.image = `/image/${req.file.filename}`;
+    updateData.image = `/images/${req.file.filename}`;
   }
 
   console.log(userId);
@@ -392,32 +392,48 @@ export const getSelfInfo = catchAsync(async (req: Request, res: Response) => {
     throw new ApiError(
       error.statusCode || 500,
       error.message ||
-        "Unexpected error occurred while retrieving user information."
+        "Unexpected error occurred while retrieving user information.",
     );
   }
 });
 
 export const uploadProfilePicture = catchAsync(
   async (req: Request, res: Response) => {
-    const user = req.user as JwtPayloadWithUser;
-    const userId = user.id;
-    const payload: any = {};
-    if (req.file) {
-      payload.image = `/image/${req.file.filename}`;
+    try {
+      const user = req.user as JwtPayloadWithUser;
+      const userId = user.id;
+      const payload: any = {};
+
+      const fetchUser: any = await UserModel.findOne({ _id: userId });
+      console.log(fetchUser);
+      if (req.file && !fetchUser.image) {
+        payload.image = `/images/${req.file.filename}`;
+      }
+
+      const uploadImage = await UserModel.findOneAndUpdate(
+        { _id: userId },
+        payload,
+        {
+          upsert: true,
+          new: true,
+        },
+      );
+
+      return sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "Image uploaded successfully",
+        data: uploadImage,
+      });
+    } catch (err) {
+      return sendResponse(res, {
+        statusCode: 400,
+        success: false,
+        message: "faild to upload",
+        data: null,
+      });
     }
-
-    const uploadImage = await UserModel.findOneAndUpdate(
-      { _id: userId },
-      payload
-    );
-
-    return sendResponse(res, {
-      statusCode: 200,
-      success: true,
-      message: "Image uploaded successfully",
-      data: uploadImage,
-    });
-  }
+  },
 );
 
 // delete user
@@ -434,7 +450,7 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
     if ((req.user as IUserPayload)?.id !== id) {
       throw new ApiError(
         403,
-        "You cannot delete this account. Please contact support"
+        "You cannot delete this account. Please contact support",
       );
     }
 
@@ -448,7 +464,7 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
   } catch (error: any) {
     throw new ApiError(
       error.statusCode || 500,
-      error.message || "Unexpected error occurred while deleting the user."
+      error.message || "Unexpected error occurred while deleting the user.",
     );
   }
 });
@@ -473,7 +489,7 @@ export const changePassword = catchAsync(
       if (!isMatch) {
         throw new ApiError(
           httpStatus.UNAUTHORIZED,
-          "Old password is incorrect."
+          "Old password is incorrect.",
         );
       }
 
@@ -490,10 +506,10 @@ export const changePassword = catchAsync(
     } catch (error: any) {
       throw new ApiError(
         error.statusCode || 500,
-        error.message || "Failed to change password."
+        error.message || "Failed to change password.",
       );
     }
-  }
+  },
 );
 
 const adminloginUser = catchAsync(async (req: Request, res: Response) => {
@@ -512,7 +528,7 @@ const adminloginUser = catchAsync(async (req: Request, res: Response) => {
     // Check password validity
     const isPasswordValid = await argon2.verify(
       user.password as string,
-      password
+      password,
     );
     if (!isPasswordValid) {
       throw new ApiError(401, "Wrong password!");
@@ -544,7 +560,7 @@ const adminloginUser = catchAsync(async (req: Request, res: Response) => {
   } catch (error: any) {
     throw new ApiError(
       error.statusCode || 500,
-      error.message || "An error occurred during admin login."
+      error.message || "An error occurred during admin login.",
     );
   }
 });
@@ -559,7 +575,7 @@ const addDeviceId = catchAsync(async (req: Request, res: Response) => {
   await UserModel.findByIdAndUpdate(
     user.id,
     { deviceId: deviceId },
-    { new: true }
+    { new: true },
   );
   return sendResponse(res, {
     statusCode: 200,
@@ -601,7 +617,7 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
       name as string,
       email as string,
       role as string,
-      requestStatus as string
+      requestStatus as string,
     );
 
     if (users.length === 0) {
@@ -662,7 +678,7 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     // Handle any errors during the user fetching or manager population
     throw new ApiError(
       error.statusCode || 500,
-      error.message || "Failed to retrieve users."
+      error.message || "Failed to retrieve users.",
     );
   }
 });
@@ -689,7 +705,7 @@ const updateAdminInformation = async (req: Request, res: Response) => {
     const updateAdmin = await UserModel.findByIdAndUpdate(
       { _id: user.id },
       userPayload,
-      { new: true }
+      { new: true },
     );
 
     return sendResponse(res, {
@@ -897,7 +913,7 @@ const updateUserStatus = async (req: Request, res: Response) => {
   const updateUserStatus = await UserModel.findByIdAndUpdate(
     { _id: userId },
     { status },
-    { new: true }
+    { new: true },
   );
 
   // send Notification
@@ -1033,7 +1049,7 @@ export const resetAdminPassword = catchAsync(
         name: user.firstName,
       },
     });
-  }
+  },
 );
 
 // count total customer
@@ -1076,8 +1092,8 @@ export const dashboardStats = async (req: Request, res: Response) => {
 //         publicFileURL: "",
 //       };
 //       if (req.file) {
-//         const imagePath = `public\\images\\${req.file.filename}`;
-//         const publicFileURL = `/images/${req.file.filename}`;
+//         const imagePath = `public\\image\\${req.file.filename}`;
+//         const publicFileURL = `/image/${req.file.filename}`;
 //         image = {
 //           path: imagePath,
 //           publicFileURL: publicFileURL,

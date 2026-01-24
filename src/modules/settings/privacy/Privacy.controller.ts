@@ -100,7 +100,7 @@ export const updatePrivacy = catchAsync(async (req: Request, res: Response) => {
     // });
     throw new ApiError(
       httpStatus.INTERNAL_SERVER_ERROR,
-      "Failed to update privacy."
+      "Failed to update privacy.",
     );
   }
 
@@ -176,7 +176,7 @@ export const htmlRoute = catchAsync(async (req: Request, res: Response) => {
     console.error("Error fetching privacy policy:", error);
     throw new ApiError(
       error.statusCode || 500,
-      error.message || "Failed to fetch html route api."
+      error.message || "Failed to fetch html route api.",
     );
   }
 });
@@ -278,8 +278,8 @@ export const AppInstruction = catchAsync(
       console.error("Error fetching privacy policy:", error);
       throw new ApiError(
         error.statusCode || 500,
-        error.message || "Failed to fetch instruction api."
+        error.message || "Failed to fetch instruction api.",
       );
     }
-  }
+  },
 );

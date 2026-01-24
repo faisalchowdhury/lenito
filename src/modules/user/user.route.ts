@@ -37,7 +37,7 @@ export const uploadImages = upload.fields([
 router.post(
   "/register",
   upload.single("companyLogo"),
-  UserController.registerUser
+  UserController.registerUser,
 );
 
 router.post("/login", loginUser);
@@ -50,7 +50,7 @@ router.patch(
   "/profile-update",
   guardRole(["user"]),
   upload.single("profilePicture"),
-  updateUser
+  updateUser,
 );
 router.get("/my-profile", guardRole(["admin", "user"]), getSelfInfo);
 router.delete("/account-delete", guardRole(["admin", "user"]), deleteUser);
@@ -143,7 +143,7 @@ router.post(
   "/upload-profile-picture",
   guardRole("user"),
   upload.single("profilePicture"),
-  uploadProfilePicture
+  uploadProfilePicture,
 );
 
 export const UserRoutes = router;
