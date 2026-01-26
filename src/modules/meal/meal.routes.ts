@@ -25,19 +25,19 @@ router.post(
     { name: "dinnerImage", maxCount: 1 },
   ]),
   detectLanguage,
-  createMeals
+  createMeals,
 );
 router.get("/get-meals", guardRole(["user"]), detectLanguage, getCurrentMeals);
 router.patch(
   "/swap-meal/:mealId",
   guardRole(["user"]),
   upload.single("image"),
-  swapMeal
+  swapMeal,
 );
 router.patch(
   "/update-meal-status/:mealId",
   guardRole(["user"]),
-  updateMealStatus
+  updateMealStatus,
 );
 router.get("/get-meal/:mealId", guardRole(["user"]), detectLanguage, getMeal);
 
@@ -46,7 +46,7 @@ router.post(
   "/create-single-meal/:mealGroupId",
   guardRole(["user"]),
   upload.single("mealImage"),
-  createSingleMeal
+  createSingleMeal,
 );
 
 export const MealRoutes = router;
