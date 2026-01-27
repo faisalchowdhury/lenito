@@ -40,7 +40,7 @@ export const generateMealsService = async (req: Request) => {
           activity_level: "moderate",
           health_goals: "maintain weight",
         },
-        timeout: 10000,
+        timeout: 0,
       },
     );
 
@@ -67,7 +67,6 @@ export const generateMealsService = async (req: Request) => {
           fat: total_daily_macronutrients.fat,
           language: "en",
         },
-        timeout: 20000,
       },
     );
 

@@ -26,10 +26,10 @@ const WeightHistorySchema: Schema = new Schema({
 
 export const HealthDetailsModel = mongoose.model<IHealth_details>(
   "HealthDetails",
-  healthDetailsSchema
+  healthDetailsSchema,
 );
 
 export const WeightHistoryModel = mongoose.model<IWeightHistory>(
   "WeightHistory",
-  WeightHistorySchema
+  WeightHistorySchema,
 );
