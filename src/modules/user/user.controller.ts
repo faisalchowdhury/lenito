@@ -131,6 +131,7 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
 
   const user = await UserModel.findOne({ email });
   console.log(email);
+  console.log(user);
   if (!user) {
     throw new ApiError(401, "This account does not exist.");
   }
@@ -189,6 +190,7 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
         name: user?.firstName + " " + user?.lastName,
         email: user?.email,
         role: user?.role,
+        healthDetails: user?.healthDetails,
       },
       token,
     },

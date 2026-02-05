@@ -3,6 +3,7 @@ import { guardRole } from "../../middlewares/roleGuard";
 import {
   createHealthdetails,
   getWeightHistory,
+  updateHealthDetails,
   updateWeight,
 } from "./health_details.controller";
 import { accessControl } from "../../middlewares/accessControl";
@@ -16,6 +17,12 @@ router.get(
   "/weight-history",
   guardRole("user"),
   //  { accessControl({ forWorkout: true }),}
-  getWeightHistory
+  getWeightHistory,
+);
+router.patch(
+  "/update-health-details",
+  guardRole(["user"]),
+  // accessControl({ forWorkout: false }),
+  updateHealthDetails,
 );
 export const HealthDetailsRoutes = router;

@@ -3,55 +3,104 @@ import { JwtPayload } from "jsonwebtoken";
 import { HealthDetailsModel, WeightHistoryModel } from "./health_details.model";
 import ApiError from "../../errors/ApiError";
 import { JwtPayloadWithUser } from "../../middlewares/userVerification";
+import { UserModel } from "../user/user.model";
+import { calorieRequirementService } from "../calories/calories.service";
+import httpStatus from "http-status";
+import mongoose from "mongoose";
 
 // add health details service
-export const healthDetailsService = async (data: Request) => {
-  const user = data.user as JwtPayload;
-  const userId = user.id;
+export const healthDetailsService = async (req: Request) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  const ifExists = await HealthDetailsModel.findOne({ userId });
+  try {
+    const user = req.user as JwtPayload;
+    const userId = user.id;
 
-  if (ifExists) {
-    throw new ApiError(400, "Healthe details already added for this user");
+    const exists = await HealthDetailsModel.findOne({ userId }).session(
+      session,
+    );
+    if (exists) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Health details already added for this user",
+      );
+    }
+
+    const {
+      bloodGroup,
+      gender,
+      age,
+      country,
+      weight,
+      height,
+      goal,
+      desiredWeight,
+      diet,
+      foodAllergies,
+      foodDislikes,
+    } = req.body;
+
+    const healthDetails = await HealthDetailsModel.create(
+      [
+        {
+          userId,
+          bloodGroup,
+          gender,
+          age,
+          country,
+          weight,
+          height,
+          goal,
+          desiredWeight,
+          diet,
+          foodAllergies,
+          foodDislikes,
+        },
+      ],
+      { session },
+    );
+
+    await UserModel.findByIdAndUpdate(
+      userId,
+      { healthDetails: true },
+      { new: true, session },
+    );
+
+    await WeightHistoryModel.create(
+      [
+        {
+          userId,
+          weight,
+          date: new Date(),
+        },
+      ],
+      { session },
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    //  Fire-and-forget (do NOT block main flow)
+    calorieRequirementService(userId).catch((err) => {
+      console.error("Calorie service failed:", err.message);
+    });
+
+    return {
+      ...healthDetails[0].toObject(),
+      healthDetails: true,
+    };
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
+    if (error instanceof ApiError) throw error;
+
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Failed to create health details",
+    );
   }
-
-  const {
-    bloodGroup,
-    gender,
-    age,
-    country,
-    weight,
-    height,
-    diet,
-    foodAllergies,
-    foodDislikes,
-  } = data.body;
-
-  const healthDetailsPayload = {
-    userId,
-    bloodGroup,
-    gender,
-    age,
-    country,
-    weight,
-    height,
-    diet,
-    foodAllergies,
-    foodDislikes,
-  };
-
-  const health_details = await HealthDetailsModel.create(healthDetailsPayload);
-
-  if (!health_details) {
-    throw new ApiError(400, "Creation failed");
-  }
-  await WeightHistoryModel.create({
-    userId,
-    weight,
-    date: new Date(),
-  });
-
-  return health_details;
 };
 
 // update weight
@@ -94,4 +143,95 @@ export const getWeightHistoryService = async (data: Request) => {
     .lean();
 
   return history;
+};
+
+export const updateHealthDetailsService = async (req: Request) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const user = req.user as JwtPayloadWithUser;
+    const userId = user.id;
+
+    const existingHealth = await HealthDetailsModel.findOne({ userId }).session(
+      session,
+    );
+
+    if (!existingHealth) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        "Health details not found for this user",
+      );
+    }
+
+    const {
+      bloodGroup,
+      gender,
+      age,
+      country,
+      weight,
+      height,
+      goal,
+      desiredWeight,
+      diet,
+      foodAllergies,
+      foodDislikes,
+      cheatDay,
+    } = req.body;
+
+    const updatedHealth = await HealthDetailsModel.findOneAndUpdate(
+      { userId },
+      {
+        $set: {
+          ...(bloodGroup && { bloodGroup }),
+          ...(gender && { gender }),
+          ...(age && { age }),
+          ...(country && { country }),
+          ...(weight && { weight }),
+          ...(height && { height }),
+          ...(goal && { goal }),
+          ...(desiredWeight && { desiredWeight }),
+          ...(diet && { diet }),
+          ...(foodAllergies && { foodAllergies }),
+          ...(foodDislikes && { foodDislikes }),
+          ...(cheatDay && { cheatDay }),
+        },
+      },
+      { new: true, session },
+    );
+
+    // If weight is updated → store history
+    if (weight && weight !== existingHealth.weight) {
+      await WeightHistoryModel.create(
+        [
+          {
+            userId,
+            weight,
+            date: new Date(),
+          },
+        ],
+        { session },
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // Fire-and-forget calorie recalculation
+    calorieRequirementService(userId).catch((err) => {
+      console.error("Calorie service failed:", err.message);
+    });
+
+    return updatedHealth;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
+    if (error instanceof ApiError) throw error;
+
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Failed to update health details",
+    );
+  }
 };

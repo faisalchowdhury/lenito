@@ -14,6 +14,7 @@ export interface IUser extends Document {
   role: string;
   password: string;
   image?: string;
+  healthDetails?: boolean;
   isVerified: boolean;
   isDeleted: boolean;
 }

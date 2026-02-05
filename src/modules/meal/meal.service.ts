@@ -440,7 +440,7 @@ export const createMealService = async (req: any) => {
     (m): m is MealType =>
       ALLOWED_MEALS.includes(m as MealType) &&
       Array.isArray(meals[m]) &&
-      meals[m].length > 0
+      meals[m].length > 0,
   );
 
   if (!selectedMeals.length) {
@@ -457,7 +457,7 @@ export const createMealService = async (req: any) => {
 
         if (Array.isArray(meal.ingredients)) {
           meal.ingredients = await Promise.all(
-            meal.ingredients.map((i: string) => translateText(i, "en"))
+            meal.ingredients.map((i: string) => translateText(i, "en")),
           );
         }
 
@@ -479,7 +479,7 @@ export const createMealService = async (req: any) => {
       const caloryCount = meal.caloryCount || [];
       const totalKcal = caloryCount.reduce(
         (sum: number, i: any) => sum + i.kcal,
-        0
+        0,
       );
 
       mealDocs.push({
@@ -506,7 +506,7 @@ export const createMealService = async (req: any) => {
 
       if (Array.isArray(meal.ingredients)) {
         meal.ingredients = await Promise.all(
-          meal.ingredients.map((i: string) => translateText(i, lang))
+          meal.ingredients.map((i: string) => translateText(i, lang)),
         );
       }
 
@@ -544,14 +544,59 @@ export const getCurrentMealsService = async (req: any) => {
         if (meal.description) {
           translatedMeal.description = await translateText(
             meal.description,
-            lang
+            lang,
           );
         }
 
         // Translate ingredients array
         if (Array.isArray(meal.ingredients)) {
           translatedMeal.ingredients = await Promise.all(
-            meal.ingredients.map((item: string) => translateText(item, lang))
+            meal.ingredients.map((item: string) => translateText(item, lang)),
+          );
+        }
+
+        //  DO NOT translate:
+        // mealType, kcal, image, date, ids
+      }
+
+      mealPlan[meal.mealType] = translatedMeal;
+    }
+
+    return mealPlan;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// recent meal chosen
+export const myRecentMeals = async (req: any) => {
+  try {
+    const user = req.user as JwtPayloadWithUser;
+    const userId = user.id;
+    const lang = req.lang || "en";
+
+    const meals = await MealModel.find({ userId })
+      .limit(5)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const mealPlan: Record<string, any | null> = {};
+
+    for (const meal of meals) {
+      const translatedMeal = { ...meal };
+
+      if (lang !== "en") {
+        if (meal.description) {
+          translatedMeal.description = await translateText(
+            meal.description,
+            lang,
+          );
+        }
+
+        // Translate ingredients array
+        if (Array.isArray(meal.ingredients)) {
+          translatedMeal.ingredients = await Promise.all(
+            meal.ingredients.map((item: string) => translateText(item, lang)),
           );
         }
 
@@ -595,7 +640,7 @@ export const swapMealService = async (req: Request) => {
   if (!description || !Array.isArray(caloryCount)) {
     throw new ApiError(
       400,
-      "Meal data must include description and caloryCount"
+      "Meal data must include description and caloryCount",
     );
   }
 
@@ -606,7 +651,7 @@ export const swapMealService = async (req: Request) => {
   // ---------------- CALCULATE KCAL ----------------
   const totalKcal = caloryCount.reduce(
     (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
-    0
+    0,
   );
 
   // ---------------- UPDATE PAYLOAD ----------------
@@ -625,7 +670,7 @@ export const swapMealService = async (req: Request) => {
   const swappedMeal = await MealModel.findOneAndUpdate(
     { _id: mealId, userId },
     { $set: swapMealPayload },
-    { new: true }
+    { new: true },
   );
 
   if (!swappedMeal) {
@@ -648,7 +693,7 @@ export const updateMealStatusService = async (data: Request) => {
 
   const updateStatus = await MealModel.updateOne(
     { _id: mealId },
-    { status: "done" }
+    { status: "done" },
   );
 
   return updateStatus;
@@ -686,7 +731,7 @@ export const getMealService = async (req: any) => {
     // ingredients
     if (Array.isArray(meal.ingredients)) {
       meal.ingredients = await Promise.all(
-        meal.ingredients.map((item: string) => translateText(item, lang))
+        meal.ingredients.map((item: string) => translateText(item, lang)),
       );
     }
 
@@ -696,7 +741,7 @@ export const getMealService = async (req: any) => {
         meal.caloryCount.map(async (c: any) => ({
           ...c,
           label: c.label ? await translateText(c.label, lang) : c.label,
-        }))
+        })),
       );
     }
   }
@@ -847,7 +892,7 @@ export const createSingleMealService = async (req: Request) => {
   if (!selectedMealType) {
     throw new ApiError(
       400,
-      "No valid meal type found (breakfast, lunch, dinner)"
+      "No valid meal type found (breakfast, lunch, dinner)",
     );
   }
 
@@ -873,7 +918,7 @@ export const createSingleMealService = async (req: Request) => {
   if (planForDate.meals.includes(selectedMealType)) {
     throw new ApiError(
       400,
-      `${selectedMealType} already exists for ${planDate}`
+      `${selectedMealType} already exists for ${planDate}`,
     );
   }
 
@@ -886,7 +931,7 @@ export const createSingleMealService = async (req: Request) => {
   // ---------------- CALCULATE KCAL ----------------
   const totalKcal = mealData.caloryCount.reduce(
     (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
-    0
+    0,
   );
 
   // ---------------- CREATE MEAL ----------------

@@ -17,10 +17,11 @@ const userSchema = new Schema<IUser>(
     },
     password: { type: String, required: true },
     image: { type: String },
+    healthDetails: { type: Boolean, required: false, default: false },
     isVerified: { type: Boolean, required: true, default: false },
     isDeleted: { type: Boolean, required: true, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // UserSchema.index({ location: "2dsphere" });

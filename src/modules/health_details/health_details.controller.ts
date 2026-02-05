@@ -3,6 +3,7 @@ import catchAsync from "../../utils/catchAsync";
 import {
   getWeightHistoryService,
   healthDetailsService,
+  updateHealthDetailsService,
   updateWeightService,
 } from "./health_details.service";
 import sendResponse from "../../utils/sendResponse";
@@ -17,7 +18,7 @@ export const createHealthdetails = catchAsync(
       message: "Health details added successfully",
       data: healthDetails,
     });
-  }
+  },
 );
 
 export const updateWeight = catchAsync(async (req: Request, res: Response) => {
@@ -41,3 +42,16 @@ export const getWeightHistory = async (req: Request, res: Response) => {
     data: getWeightHistory,
   });
 };
+
+export const updateHealthDetails = catchAsync(
+  async (req: Request, res: Response) => {
+    const updateHealthDetails = await updateHealthDetailsService(req);
+
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Health details updated successfully",
+      data: updateHealthDetails,
+    });
+  },
+);

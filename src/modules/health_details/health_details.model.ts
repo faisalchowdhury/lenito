@@ -9,13 +9,17 @@ const healthDetailsSchema = new Schema<IHealth_details>({
   country: { type: String, required: true },
   weight: { type: Number, required: true },
   height: { type: Number, required: true },
+  goal: { type: String, required: true, enum: ["lose", "gain", "stay-fit"] },
+  desiredWeight: { type: Number, required: true },
   diet: {
     type: String,
     required: true,
     enum: ["classic", "vegan", "pescatarian", "carnivore", "vegetarian"],
   },
+
   foodAllergies: { type: [String], required: true },
   foodDislikes: { type: [String], required: true },
+  cheatDay: { type: String, required: false },
 });
 
 const WeightHistorySchema: Schema = new Schema({

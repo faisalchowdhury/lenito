@@ -3,6 +3,7 @@ import { Request } from "express";
 import { HealthDetailsModel } from "../../health_details/health_details.model";
 import { JwtPayloadWithUser } from "../../../middlewares/userVerification";
 import { WorkoutModel } from "../../workout_details/workout_details.model";
+import sendResponse from "../../../utils/sendResponse";
 
 export const generateMealsService = async (req: Request) => {
   try {
@@ -66,6 +67,7 @@ export const generateMealsService = async (req: Request) => {
           protein: total_daily_macronutrients.protein,
           fat: total_daily_macronutrients.fat,
           language: "en",
+          generate_images: true,
         },
       },
     );
@@ -78,35 +80,39 @@ export const generateMealsService = async (req: Request) => {
 };
 
 export const calorieIntakeService = async (req: Request) => {
-  const user = req.user as JwtPayloadWithUser;
-  const userId = user.id;
+  try {
+    const user = req.user as JwtPayloadWithUser;
+    const userId = user.id;
 
-  const health = await HealthDetailsModel.findOne({ userId });
+    const health = await HealthDetailsModel.findOne({ userId });
 
-  if (!health) {
-    throw new Error("Health details not found");
-  }
+    if (!health) {
+      throw new Error("Health details not found");
+    }
 
-  const { bloodGroup, diet, age, weight, height } = health;
+    const { bloodGroup, diet, age, weight, height } = health;
 
-  const calorieResponse = await axios.get(
-    `${process.env.AI_SERVER_BASE}/meal/calculate-daily-nutrition`,
-    {
-      params: {
-        user_id: userId,
-        blood_type: bloodGroup,
-        diet_type: diet,
-        age,
-        weight,
-        height,
-        activity_level: "moderate",
-        health_goals: "maintain weight",
+    const calorieResponse = await axios.get(
+      `${process.env.AI_SERVER_BASE}/meal/calculate-daily-nutrition`,
+      {
+        params: {
+          user_id: userId,
+          blood_type: bloodGroup,
+          diet_type: diet,
+          age,
+          weight,
+          height,
+          activity_level: "moderate",
+          health_goals: "maintain weight",
+        },
+        timeout: 10000,
       },
-      timeout: 10000,
-    },
-  );
-  console.log(calorieResponse.data);
-  return calorieResponse.data;
+    );
+    console.log(calorieResponse.data);
+    return calorieResponse.data;
+  } catch (err: any) {
+    console.log(err.message);
+  }
 };
 
 export const generateMealImageService = async (req: Request) => {

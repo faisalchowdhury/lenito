@@ -2,7 +2,10 @@ import { Request } from "express";
 import { JwtPayloadWithUser } from "../../middlewares/userVerification";
 import { MealModel } from "../meal/meal.model";
 import { WorkoutPlanModel } from "../workout_plan/workout_plan.model";
-import { WeightHistoryModel } from "../health_details/health_details.model";
+import {
+  HealthDetailsModel,
+  WeightHistoryModel,
+} from "../health_details/health_details.model";
 import { WorkoutModel } from "../workout_details/workout_details.model";
 
 export const processService = async (data: Request) => {
@@ -81,11 +84,11 @@ export const getWeightProgressService = async (data: Request) => {
     .sort({ date: 1 })
     .lean();
 
-  const workoutDetails: any = await WorkoutModel.findOne({ userId });
+  const healthDetails: any = await HealthDetailsModel.findOne({ userId });
 
   return {
     initialWeight: initialData.weight,
     currentWeight: currentData.weight,
-    desiredWeight: workoutDetails.desiredWeight,
+    desiredWeight: healthDetails.desiredWeight,
   };
 };

@@ -8,6 +8,7 @@ import {
   deleteMealService,
   getCurrentMealsService,
   getMealService,
+  myRecentMeals,
   swapMealService,
   updateMealStatusService,
 } from "./meal.service";
@@ -37,8 +38,18 @@ export const getCurrentMeals = catchAsync(
       message: "Todays meal reterive successfully",
       data: getCurrentMeals,
     });
-  }
+  },
 );
+export const recentMeals = catchAsync(async (req: Request, res: Response) => {
+  const recentMeals = await myRecentMeals(req);
+
+  return sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Recent meals fetched successfully",
+    data: recentMeals,
+  });
+});
 
 export const swapMeal = catchAsync(async (req: Request, res: Response) => {
   const swapMeal = await swapMealService(req);
@@ -59,7 +70,7 @@ export const updateMealStatus = catchAsync(
       message: "Meal completed successfully",
       data: null,
     });
-  }
+  },
 );
 
 export const getMeal = catchAsync(async (req: Request, res: Response) => {
@@ -93,5 +104,5 @@ export const createSingleMeal = catchAsync(
       message: "Meal created successfully",
       data: createSingleMeal,
     });
-  }
+  },
 );

@@ -20,6 +20,7 @@ import { StreakRoutes } from "../modules/streak/streak.routes";
 import { ProgressRoutes } from "../modules/progress/progress.routes";
 import { FaqRoutes } from "../modules/faq/FAQ.router";
 import { AiMealRoutes } from "../modules/ai_response_process/meal/meal.routes";
+import { CalorieRoutes } from "../modules/calories/calories.routes";
 
 // import { PaymentRoute } from "../modules/unused_payments/payment.route";
 
@@ -35,6 +36,7 @@ export const routesConfig = [
   { path: "progress", handler: ProgressRoutes },
   { path: "faq", handler: FaqRoutes },
   { path: "ai-meal", handler: AiMealRoutes },
+  { path: "calorie", handler: CalorieRoutes },
 
   { path: "terms", handler: TermsRoutes },
   { path: "about", handler: AboutRoutes },
