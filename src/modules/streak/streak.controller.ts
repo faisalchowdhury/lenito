@@ -30,7 +30,7 @@ export const getUserStreakController = async (req: Request, res: Response) => {
  */
 export const getWeeklyStatusController = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.params.userId);
@@ -55,7 +55,7 @@ export const getWeeklyStatusController = async (
  */
 export const checkTodayStreakController = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.params.userId);
@@ -86,7 +86,7 @@ export const checkTodayStreakController = async (
  */
 export const runNightlyCheckController = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     await streakService.runNightlyStreakCheck();
@@ -115,7 +115,7 @@ export const createTestDataController = async (req: Request, res: Response) => {
     const result = await streakService.createTestData(
       userId,
       days,
-      allCompleted
+      allCompleted,
     );
 
     res.status(200).json({
@@ -137,7 +137,7 @@ export const createTestDataController = async (req: Request, res: Response) => {
  */
 export const calculatePastStreakController = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.params.userId);

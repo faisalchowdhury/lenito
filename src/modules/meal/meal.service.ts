@@ -580,10 +580,13 @@ export const myRecentMeals = async (req: any) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    const mealPlan: Record<string, any | null> = {};
+    const mealPlans: any[] = [];
 
     for (const meal of meals) {
-      const translatedMeal = { ...meal };
+      const translatedMeal: any = {
+        ...meal,
+        mealType: meal.mealType, // 👈 explicitly included
+      };
 
       if (lang !== "en") {
         if (meal.description) {
@@ -593,21 +596,17 @@ export const myRecentMeals = async (req: any) => {
           );
         }
 
-        // Translate ingredients array
         if (Array.isArray(meal.ingredients)) {
           translatedMeal.ingredients = await Promise.all(
             meal.ingredients.map((item: string) => translateText(item, lang)),
           );
         }
-
-        //  DO NOT translate:
-        // mealType, kcal, image, date, ids
       }
 
-      mealPlan[meal.mealType] = translatedMeal;
+      mealPlans.push(translatedMeal);
     }
 
-    return mealPlan;
+    return mealPlans;
   } catch (error) {
     throw error;
   }
