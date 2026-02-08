@@ -9,7 +9,7 @@ export const createReportService = async (
   name: string | undefined,
   email: string,
   problem: string,
-  msg: string
+  msg: string,
 ) => {
   try {
     const createdReport = await ReportModel.create({
@@ -31,7 +31,7 @@ export const createReportService = async (
 
 export const reportList = async (
   page: number,
-  limit: number
+  limit: number,
 
   //search?: string,
 ) => {
@@ -60,25 +60,33 @@ export const supportDelete = async (id: string): Promise<void> => {
 };
 
 export const updateReportService = async (data: Request) => {
-  const { reportId } = data.params;
+  try {
+    const { reportId } = data.params;
 
-  const updateReport = await ReportModel.findOneAndUpdate(
-    { _id: reportId },
-    { status: "resolved" },
-    {
-      new: true,
-    }
-  );
+    const updateReport = await ReportModel.findOneAndUpdate(
+      { _id: reportId },
+      { status: "resolved" },
+      {
+        new: true,
+      },
+    );
 
-  return updateReport;
+    return updateReport;
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 export const getSingleReportService = async (data: Request) => {
-  const { reportId } = data.params;
+  try {
+    const { reportId } = data.params;
 
-  const getSingleReport = await ReportModel.findOne({ _id: reportId });
-  if (!getSingleReport) {
-    throw new ApiError(400, "Report not found");
+    const getSingleReport = await ReportModel.findOne({ _id: reportId });
+    if (!getSingleReport) {
+      throw new ApiError(400, "Report not found");
+    }
+    return getSingleReport;
+  } catch (err) {
+    console.log(err);
   }
-  return getSingleReport;
 };

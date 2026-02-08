@@ -388,137 +388,141 @@ const normalizePath = (path: string) =>
 //   }
 // };
 export const createMealService = async (req: any) => {
-  const user = req.user as JwtPayloadWithUser;
-  const subscription = req.subscription;
-  const lang = req.lang || "en";
+  try {
+    const user = req.user as JwtPayloadWithUser;
+    const subscription = req.subscription;
+    const lang = req.lang || "en";
 
-  const userId = user.id;
+    const userId = user.id;
 
-  // meals comes as STRING from form-data
-  const meals =
-    typeof req.body.meals === "string"
-      ? JSON.parse(req.body.meals)
-      : req.body.meals;
+    // meals comes as STRING from form-data
+    const meals =
+      typeof req.body.meals === "string"
+        ? JSON.parse(req.body.meals)
+        : req.body.meals;
 
-  const date = req.body.date;
-  const dateStr = dayjs(date).format("YYYY-MM-DD");
-  const todayStr = dayjs().format("YYYY-MM-DD");
+    const date = req.body.date;
+    const dateStr = dayjs(date).format("YYYY-MM-DD");
+    const todayStr = dayjs().format("YYYY-MM-DD");
 
-  // ---------------- FILES ----------------
-  const files = req.files as {
-    breakfastImage?: Express.Multer.File[];
-    lunchImage?: Express.Multer.File[];
-    dinnerImage?: Express.Multer.File[];
-  };
+    // ---------------- FILES ----------------
+    const files = req.files as {
+      breakfastImage?: Express.Multer.File[];
+      lunchImage?: Express.Multer.File[];
+      dinnerImage?: Express.Multer.File[];
+    };
 
-  const imageMap: Record<string, string | null> = {
-    breakfast: files?.breakfastImage?.[0]?.path
-      ? normalizePath(files.breakfastImage[0].path)
-      : null,
-    lunch: files?.lunchImage?.[0]?.path
-      ? normalizePath(files.lunchImage[0].path)
-      : null,
-    dinner: files?.dinnerImage?.[0]?.path
-      ? normalizePath(files.dinnerImage[0].path)
-      : null,
-  };
+    const imageMap: Record<string, string | null> = {
+      breakfast: files?.breakfastImage?.[0]?.path
+        ? normalizePath(files.breakfastImage[0].path)
+        : null,
+      lunch: files?.lunchImage?.[0]?.path
+        ? normalizePath(files.lunchImage[0].path)
+        : null,
+      dinner: files?.dinnerImage?.[0]?.path
+        ? normalizePath(files.dinnerImage[0].path)
+        : null,
+    };
 
-  // ---------------- DATE VALIDATION ----------------
-  if (dayjs(dateStr).isBefore(todayStr)) {
-    throw new ApiError(400, "You cannot plan meals for previous days");
-  }
+    // ---------------- DATE VALIDATION ----------------
+    if (dayjs(dateStr).isBefore(todayStr)) {
+      throw new ApiError(400, "You cannot plan meals for previous days");
+    }
 
-  // ---------------- PLAN LIMITS ----------------
-  const weeklyLimit = subscription?.planId?.limits?.mealsPerWeek ?? 1;
-  const monthlyLimit = subscription?.planId?.limits?.mealsPerMonth ?? 4;
+    // ---------------- PLAN LIMITS ----------------
+    const weeklyLimit = subscription?.planId?.limits?.mealsPerWeek ?? 1;
+    const monthlyLimit = subscription?.planId?.limits?.mealsPerMonth ?? 4;
 
-  // ---------------- SELECTED MEALS ----------------
-  const ALLOWED_MEALS = ["breakfast", "lunch", "dinner"] as const;
-  type MealType = (typeof ALLOWED_MEALS)[number];
+    // ---------------- SELECTED MEALS ----------------
+    const ALLOWED_MEALS = ["breakfast", "lunch", "dinner"] as const;
+    type MealType = (typeof ALLOWED_MEALS)[number];
 
-  const selectedMeals: MealType[] = Object.keys(meals).filter(
-    (m): m is MealType =>
-      ALLOWED_MEALS.includes(m as MealType) &&
-      Array.isArray(meals[m]) &&
-      meals[m].length > 0,
-  );
+    const selectedMeals: MealType[] = Object.keys(meals).filter(
+      (m): m is MealType =>
+        ALLOWED_MEALS.includes(m as MealType) &&
+        Array.isArray(meals[m]) &&
+        meals[m].length > 0,
+    );
 
-  if (!selectedMeals.length) {
-    throw new ApiError(400, "No meals selected");
-  }
+    if (!selectedMeals.length) {
+      throw new ApiError(400, "No meals selected");
+    }
 
-  // ----------------  NORMALIZE INPUT TO ENGLISH ----------------
-  if (lang !== "en") {
+    // ----------------  NORMALIZE INPUT TO ENGLISH ----------------
+    if (lang !== "en") {
+      for (const mealType of selectedMeals) {
+        for (const meal of meals[mealType]) {
+          if (meal.description) {
+            meal.description = await translateText(meal.description, "en");
+          }
+
+          if (Array.isArray(meal.ingredients)) {
+            meal.ingredients = await Promise.all(
+              meal.ingredients.map((i: string) => translateText(i, "en")),
+            );
+          }
+
+          if (Array.isArray(meal.caloryCount)) {
+            for (const c of meal.caloryCount) {
+              c.label = await translateText(c.label, "en");
+            }
+          }
+        }
+      }
+    }
+
+    // ---------------- CREATE MEALS ----------------
+    const mealGroupId = uniqid();
+    const mealDocs: any[] = [];
+
     for (const mealType of selectedMeals) {
       for (const meal of meals[mealType]) {
-        if (meal.description) {
-          meal.description = await translateText(meal.description, "en");
-        }
+        const caloryCount = meal.caloryCount || [];
+        const totalKcal = caloryCount.reduce(
+          (sum: number, i: any) => sum + i.kcal,
+          0,
+        );
+
+        mealDocs.push({
+          userId,
+          mealGroupId,
+          planDate: dateStr,
+          mealType,
+          description: meal.description,
+          ingredients: meal.ingredients || [],
+          caloryCount,
+          image: imageMap[mealType],
+          date,
+          kcal: totalKcal,
+        });
+      }
+    }
+
+    const savedMeals = await MealModel.insertMany(mealDocs);
+
+    // ----------------  TRANSLATE RESPONSE ----------------
+    if (lang !== "en") {
+      for (const meal of savedMeals) {
+        meal.description = await translateText(meal.description, lang);
 
         if (Array.isArray(meal.ingredients)) {
           meal.ingredients = await Promise.all(
-            meal.ingredients.map((i: string) => translateText(i, "en")),
+            meal.ingredients.map((i: string) => translateText(i, lang)),
           );
         }
 
         if (Array.isArray(meal.caloryCount)) {
           for (const c of meal.caloryCount) {
-            c.label = await translateText(c.label, "en");
+            c.label = await translateText(c.label, lang);
           }
         }
       }
     }
+
+    return savedMeals;
+  } catch (err) {
+    console.log(err);
   }
-
-  // ---------------- CREATE MEALS ----------------
-  const mealGroupId = uniqid();
-  const mealDocs: any[] = [];
-
-  for (const mealType of selectedMeals) {
-    for (const meal of meals[mealType]) {
-      const caloryCount = meal.caloryCount || [];
-      const totalKcal = caloryCount.reduce(
-        (sum: number, i: any) => sum + i.kcal,
-        0,
-      );
-
-      mealDocs.push({
-        userId,
-        mealGroupId,
-        planDate: dateStr,
-        mealType,
-        description: meal.description,
-        ingredients: meal.ingredients || [],
-        caloryCount,
-        image: imageMap[mealType],
-        date,
-        kcal: totalKcal,
-      });
-    }
-  }
-
-  const savedMeals = await MealModel.insertMany(mealDocs);
-
-  // ----------------  TRANSLATE RESPONSE ----------------
-  if (lang !== "en") {
-    for (const meal of savedMeals) {
-      meal.description = await translateText(meal.description, lang);
-
-      if (Array.isArray(meal.ingredients)) {
-        meal.ingredients = await Promise.all(
-          meal.ingredients.map((i: string) => translateText(i, lang)),
-        );
-      }
-
-      if (Array.isArray(meal.caloryCount)) {
-        for (const c of meal.caloryCount) {
-          c.label = await translateText(c.label, lang);
-        }
-      }
-    }
-  }
-
-  return savedMeals;
 };
 
 export const getCurrentMealsService = async (req: any) => {
@@ -585,7 +589,7 @@ export const myRecentMeals = async (req: any) => {
     for (const meal of meals) {
       const translatedMeal: any = {
         ...meal,
-        mealType: meal.mealType, // 👈 explicitly included
+        mealType: meal.mealType, // explicitly included
       };
 
       if (lang !== "en") {
@@ -615,87 +619,95 @@ export const myRecentMeals = async (req: any) => {
 // swap meal
 
 export const swapMealService = async (req: Request) => {
-  const user = req.user as JwtPayloadWithUser;
-  const userId = user.id;
-  const { mealId } = req.params;
+  try {
+    const user = req.user as JwtPayloadWithUser;
+    const userId = user.id;
+    const { mealId } = req.params;
 
-  if (!mealId) {
-    throw new ApiError(400, "Meal Id is required");
-  }
+    if (!mealId) {
+      throw new ApiError(400, "Meal Id is required");
+    }
 
-  // ---------------- PARSE BODY ----------------
-  const description = req.body.description;
+    // ---------------- PARSE BODY ----------------
+    const description = req.body.description;
 
-  const ingredients =
-    typeof req.body.ingredients === "string"
-      ? JSON.parse(req.body.ingredients)
-      : req.body.ingredients;
+    const ingredients =
+      typeof req.body.ingredients === "string"
+        ? JSON.parse(req.body.ingredients)
+        : req.body.ingredients;
 
-  const caloryCount =
-    typeof req.body.caloryCount === "string"
-      ? JSON.parse(req.body.caloryCount)
-      : req.body.caloryCount;
+    const caloryCount =
+      typeof req.body.caloryCount === "string"
+        ? JSON.parse(req.body.caloryCount)
+        : req.body.caloryCount;
 
-  if (!description || !Array.isArray(caloryCount)) {
-    throw new ApiError(
-      400,
-      "Meal data must include description and caloryCount",
+    if (!description || !Array.isArray(caloryCount)) {
+      throw new ApiError(
+        400,
+        "Meal data must include description and caloryCount",
+      );
+    }
+
+    // ---------------- IMAGE (OPTIONAL) ----------------
+    const file = req.file as Express.Multer.File | undefined;
+    const imagePath = file ? normalizePath(file.path) : undefined;
+
+    // ---------------- CALCULATE KCAL ----------------
+    const totalKcal = caloryCount.reduce(
+      (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
+      0,
     );
+
+    // ---------------- UPDATE PAYLOAD ----------------
+    const swapMealPayload: any = {
+      description,
+      ingredients: Array.isArray(ingredients) ? ingredients : [],
+      caloryCount,
+      kcal: totalKcal,
+    };
+
+    if (imagePath) {
+      swapMealPayload.image = imagePath;
+    }
+
+    // ---------------- UPDATE ----------------
+    const swappedMeal = await MealModel.findOneAndUpdate(
+      { _id: mealId, userId },
+      { $set: swapMealPayload },
+      { new: true },
+    );
+
+    if (!swappedMeal) {
+      throw new ApiError(404, "Meal not found or you do not have permission");
+    }
+
+    return swappedMeal;
+  } catch (err) {
+    console.log(err);
   }
-
-  // ---------------- IMAGE (OPTIONAL) ----------------
-  const file = req.file as Express.Multer.File | undefined;
-  const imagePath = file ? normalizePath(file.path) : undefined;
-
-  // ---------------- CALCULATE KCAL ----------------
-  const totalKcal = caloryCount.reduce(
-    (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
-    0,
-  );
-
-  // ---------------- UPDATE PAYLOAD ----------------
-  const swapMealPayload: any = {
-    description,
-    ingredients: Array.isArray(ingredients) ? ingredients : [],
-    caloryCount,
-    kcal: totalKcal,
-  };
-
-  if (imagePath) {
-    swapMealPayload.image = imagePath;
-  }
-
-  // ---------------- UPDATE ----------------
-  const swappedMeal = await MealModel.findOneAndUpdate(
-    { _id: mealId, userId },
-    { $set: swapMealPayload },
-    { new: true },
-  );
-
-  if (!swappedMeal) {
-    throw new ApiError(404, "Meal not found or you do not have permission");
-  }
-
-  return swappedMeal;
 };
 
 export const updateMealStatusService = async (data: Request) => {
-  const { mealId } = data.params;
+  try {
+    const { mealId } = data.params;
 
-  const checkStatus = await MealModel.findOne({ _id: mealId });
+    const checkStatus = await MealModel.findOne({ _id: mealId });
 
-  if (!checkStatus) {
-    throw new ApiError(400, "Meal not found");
-  } else if (checkStatus?.status === "done") {
-    throw new ApiError(400, "This meal is already completed");
+    if (!checkStatus) {
+      throw new ApiError(400, "Meal not found");
+    } else if (checkStatus?.status === "done") {
+      throw new ApiError(400, "This meal is already completed");
+    }
+
+    const updateStatus = await MealModel.updateOne(
+      { _id: mealId },
+      { status: "done" },
+    );
+
+    return updateStatus;
+  } catch (err) {
+    console.log(err);
   }
-
-  const updateStatus = await MealModel.updateOne(
-    { _id: mealId },
-    { status: "done" },
-  );
-
-  return updateStatus;
 };
 
 // export const getMealService = async (data: Request) => {
@@ -711,49 +723,57 @@ export const updateMealStatusService = async (data: Request) => {
 // };
 
 export const getMealService = async (req: any) => {
-  const { mealId } = req.params;
-  const lang = req.lang || "en";
+  try {
+    const { mealId } = req.params;
+    const lang = req.lang || "en";
 
-  const meal = await MealModel.findOne({ _id: mealId }).lean();
+    const meal = await MealModel.findOne({ _id: mealId }).lean();
 
-  if (!meal) {
-    throw new ApiError(400, "Meal not found");
+    if (!meal) {
+      throw new ApiError(400, "Meal not found");
+    }
+
+    // ---------------- TRANSLATION ----------------
+    if (lang !== "en") {
+      // description
+      if (meal.description) {
+        meal.description = await translateText(meal.description, lang);
+      }
+
+      // ingredients
+      if (Array.isArray(meal.ingredients)) {
+        meal.ingredients = await Promise.all(
+          meal.ingredients.map((item: string) => translateText(item, lang)),
+        );
+      }
+
+      // caloryCount labels
+      if (Array.isArray(meal.caloryCount)) {
+        meal.caloryCount = await Promise.all(
+          meal.caloryCount.map(async (c: any) => ({
+            ...c,
+            label: c.label ? await translateText(c.label, lang) : c.label,
+          })),
+        );
+      }
+    }
+
+    return meal;
+  } catch (err) {
+    console.log(err);
   }
-
-  // ---------------- TRANSLATION ----------------
-  if (lang !== "en") {
-    // description
-    if (meal.description) {
-      meal.description = await translateText(meal.description, lang);
-    }
-
-    // ingredients
-    if (Array.isArray(meal.ingredients)) {
-      meal.ingredients = await Promise.all(
-        meal.ingredients.map((item: string) => translateText(item, lang)),
-      );
-    }
-
-    // caloryCount labels
-    if (Array.isArray(meal.caloryCount)) {
-      meal.caloryCount = await Promise.all(
-        meal.caloryCount.map(async (c: any) => ({
-          ...c,
-          label: c.label ? await translateText(c.label, lang) : c.label,
-        })),
-      );
-    }
-  }
-
-  return meal;
 };
 
 export const deleteMealService = async (data: Request) => {
-  const { mealId } = data.params;
+  try {
+    const { mealId } = data.params;
 
-  const deleteMeal = await MealModel.deleteOne({ _id: mealId });
+    const deleteMeal = await MealModel.deleteOne({ _id: mealId });
 
-  return deleteMeal;
+    return deleteMeal;
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 // export const createSingleMealService = async (req: Request) => {
@@ -831,121 +851,128 @@ export const deleteMealService = async (data: Request) => {
 // };
 
 export const createSingleMealService = async (req: Request) => {
-  const user = req.user as JwtPayloadWithUser;
-  const userId = user.id;
-  const { mealGroupId } = req.params;
+  try {
+    const user = req.user as JwtPayloadWithUser;
+    const userId = user.id;
+    const { mealGroupId } = req.params;
 
-  if (!mealGroupId) {
-    throw new ApiError(400, "Meal Group Id is required");
-  }
-
-  // ---------------- GET DATE FROM DB (FIX) ----------------
-  const groupMeal: any = await MealModel.findOne({
-    mealGroupId,
-    userId,
-  }).lean();
-
-  if (!groupMeal) {
-    throw new ApiError(404, "Meal group not found");
-  }
-
-  const planDate = dayjs(groupMeal.date).format("YYYY-MM-DD");
-
-  if (!planDate) {
-    throw new ApiError(500, "Meal group date is missing");
-  }
-
-  const today = dayjs().format("YYYY-MM-DD");
-
-  if (dayjs(planDate).isBefore(today)) {
-    throw new ApiError(400, "You cannot update meals for previous days");
-  }
-
-  // ---------------- MEAL DATA ----------------
-  const meal =
-    typeof req.body.meal === "string"
-      ? JSON.parse(req.body.meal)
-      : req.body.meal;
-
-  if (!meal || typeof meal !== "object") {
-    throw new ApiError(400, "Meal data is required");
-  }
-
-  // ---------------- IMAGE ----------------
-  const file = req.file as Express.Multer.File | undefined;
-  const imagePath = file ? normalizePath(file.path) : null;
-
-  // ---------------- DETECT MEAL TYPE ----------------
-  const mealTypes = ["breakfast", "lunch", "dinner"] as const;
-  type MealType = (typeof mealTypes)[number];
-
-  let selectedMealType: MealType | null = null;
-
-  for (const type of mealTypes) {
-    if (meal[type]) {
-      selectedMealType = type;
-      break;
+    if (!mealGroupId) {
+      throw new ApiError(400, "Meal Group Id is required");
     }
-  }
 
-  if (!selectedMealType) {
-    throw new ApiError(
-      400,
-      "No valid meal type found (breakfast, lunch, dinner)",
+    // ---------------- GET DATE FROM DB (FIX) ----------------
+    const groupMeal: any = await MealModel.findOne({
+      mealGroupId,
+      userId,
+    }).lean();
+
+    if (!groupMeal) {
+      throw new ApiError(404, "Meal group not found");
+    }
+
+    const planDate = dayjs(groupMeal.date).format("YYYY-MM-DD");
+
+    if (!planDate) {
+      throw new ApiError(500, "Meal group date is missing");
+    }
+
+    const today = dayjs().format("YYYY-MM-DD");
+
+    if (dayjs(planDate).isBefore(today)) {
+      throw new ApiError(400, "You cannot update meals for previous days");
+    }
+
+    // ---------------- MEAL DATA ----------------
+    const meal =
+      typeof req.body.meal === "string"
+        ? JSON.parse(req.body.meal)
+        : req.body.meal;
+
+    if (!meal || typeof meal !== "object") {
+      throw new ApiError(400, "Meal data is required");
+    }
+
+    // ---------------- IMAGE ----------------
+    const file = req.file as Express.Multer.File | undefined;
+    const imagePath = file ? normalizePath(file.path) : null;
+
+    // ---------------- DETECT MEAL TYPE ----------------
+    const mealTypes = ["breakfast", "lunch", "dinner"] as const;
+    type MealType = (typeof mealTypes)[number];
+
+    let selectedMealType: MealType | null = null;
+
+    for (const type of mealTypes) {
+      if (meal[type]) {
+        selectedMealType = type;
+        break;
+      }
+    }
+
+    if (!selectedMealType) {
+      throw new ApiError(
+        400,
+        "No valid meal type found (breakfast, lunch, dinner)",
+      );
+    }
+
+    const mealData = meal[selectedMealType];
+
+    if (!mealData.description || !Array.isArray(mealData.caloryCount)) {
+      throw new ApiError(400, "Meal must include description and caloryCount");
+    }
+
+    // ---------------- MEAL USAGE VALIDATION ----------------
+    const usage = await MealUsageModel.findOne({ userId });
+
+    if (!usage) {
+      throw new ApiError(
+        400,
+        "Meal usage not found. Create a meal plan first.",
+      );
+    }
+
+    const planForDate = usage.mealPlans.find((p) => p.planDate === planDate);
+
+    if (!planForDate) {
+      throw new ApiError(400, "Meal plan for this date does not exist");
+    }
+
+    if (planForDate.meals.includes(selectedMealType)) {
+      throw new ApiError(
+        400,
+        `${selectedMealType} already exists for ${planDate}`,
+      );
+    }
+
+    // ---------------- UPDATE USAGE (ANTI-DUPLICATE LOCK) ----------------
+    planForDate.meals.push(selectedMealType);
+    planForDate.mealCount = (planForDate.mealCount || 0) + 1;
+
+    await usage.save();
+
+    // ---------------- CALCULATE KCAL ----------------
+    const totalKcal = mealData.caloryCount.reduce(
+      (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
+      0,
     );
+
+    // ---------------- CREATE MEAL ----------------
+    const newMeal = await MealModel.create({
+      userId,
+      mealGroupId,
+      planDate, // optional, keep for consistency
+      mealType: selectedMealType,
+      description: mealData.description,
+      ingredients: mealData.ingredients || [],
+      caloryCount: mealData.caloryCount,
+      kcal: totalKcal,
+      image: imagePath,
+      date: planDate,
+    });
+
+    return newMeal;
+  } catch (err) {
+    console.log(err);
   }
-
-  const mealData = meal[selectedMealType];
-
-  if (!mealData.description || !Array.isArray(mealData.caloryCount)) {
-    throw new ApiError(400, "Meal must include description and caloryCount");
-  }
-
-  // ---------------- MEAL USAGE VALIDATION ----------------
-  const usage = await MealUsageModel.findOne({ userId });
-
-  if (!usage) {
-    throw new ApiError(400, "Meal usage not found. Create a meal plan first.");
-  }
-
-  const planForDate = usage.mealPlans.find((p) => p.planDate === planDate);
-
-  if (!planForDate) {
-    throw new ApiError(400, "Meal plan for this date does not exist");
-  }
-
-  if (planForDate.meals.includes(selectedMealType)) {
-    throw new ApiError(
-      400,
-      `${selectedMealType} already exists for ${planDate}`,
-    );
-  }
-
-  // ---------------- UPDATE USAGE (ANTI-DUPLICATE LOCK) ----------------
-  planForDate.meals.push(selectedMealType);
-  planForDate.mealCount = (planForDate.mealCount || 0) + 1;
-
-  await usage.save();
-
-  // ---------------- CALCULATE KCAL ----------------
-  const totalKcal = mealData.caloryCount.reduce(
-    (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
-    0,
-  );
-
-  // ---------------- CREATE MEAL ----------------
-  const newMeal = await MealModel.create({
-    userId,
-    mealGroupId,
-    planDate, // optional, keep for consistency
-    mealType: selectedMealType,
-    description: mealData.description,
-    ingredients: mealData.ingredients || [],
-    caloryCount: mealData.caloryCount,
-    kcal: totalKcal,
-    image: imagePath,
-    date: planDate,
-  });
-
-  return newMeal;
 };

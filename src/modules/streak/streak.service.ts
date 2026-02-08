@@ -19,7 +19,7 @@ const normalizeDay = (date: Date) => {
  */
 export const checkDailyCompletion = async (
   userId: mongoose.Types.ObjectId,
-  date: Date
+  date: Date,
 ) => {
   const startOfDay = normalizeDay(date);
   const endOfDay = new Date(startOfDay);
@@ -64,7 +64,7 @@ export const checkDailyCompletion = async (
  */
 export const updateUserStreak = async (
   userId: mongoose.Types.ObjectId,
-  date: Date
+  date: Date,
 ): Promise<void> => {
   const today = normalizeDay(date);
   const completion = await checkDailyCompletion(userId, today);
@@ -83,7 +83,7 @@ export const updateUserStreak = async (
 
   // Prevent duplicate processing
   const alreadyProcessed = streak.streakHistory.find(
-    (d) => normalizeDay(d.date).getTime() === today.getTime()
+    (d) => normalizeDay(d.date).getTime() === today.getTime(),
   );
   if (alreadyProcessed) return;
 
@@ -167,7 +167,7 @@ export const getUserStreak = async (userId: mongoose.Types.ObjectId) => {
  * Get weekly streak status (only consecutive streak days including today)
  */
 export const getWeeklyStreakStatus = async (
-  userId: mongoose.Types.ObjectId
+  userId: mongoose.Types.ObjectId,
 ) => {
   const streak = await getUserStreak(userId);
 
@@ -222,7 +222,7 @@ export const getWeeklyStreakStatus = async (
 export const createTestData = async (
   userId: mongoose.Types.ObjectId,
   days: number = 7,
-  allCompleted: boolean = true
+  allCompleted: boolean = true,
 ) => {
   const today = normalizeDay(new Date());
 
@@ -274,7 +274,7 @@ export const createTestData = async (
  */
 export const calculatePastStreak = async (
   userId: mongoose.Types.ObjectId,
-  days: number = 7
+  days: number = 7,
 ) => {
   const today = new Date();
   today.setHours(23, 59, 59, 999);
@@ -319,6 +319,6 @@ export const resetUserStreak = async (userId: mongoose.Types.ObjectId) => {
       streakHistory: [],
       totalCompletedDays: 0,
     },
-    { upsert: true, new: true }
+    { upsert: true, new: true },
   );
 };
