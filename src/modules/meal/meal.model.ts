@@ -8,6 +8,7 @@ const CaloryItemSchema = new Schema({
 
 const mealSchema = new Schema<IMeal>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  mealName: { type: String, required: true },
   mealType: { type: String, required: true },
   kcal: { type: Number, required: true },
   description: { type: String, required: true },

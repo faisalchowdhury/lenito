@@ -5,6 +5,7 @@ export interface ICaloryItem {
 }
 export interface IMeal extends Document {
   userId: Types.ObjectId;
+  mealName: string;
   mealType: string;
   kcal: number;
   description: string;

@@ -388,141 +388,139 @@ const normalizePath = (path: string) =>
 //   }
 // };
 export const createMealService = async (req: any) => {
-  try {
-    const user = req.user as JwtPayloadWithUser;
-    const subscription = req.subscription;
-    const lang = req.lang || "en";
+  const user = req.user as JwtPayloadWithUser;
+  const subscription = req.subscription;
+  const lang = req.lang || "en";
 
-    const userId = user.id;
+  const userId = user.id;
 
-    // meals comes as STRING from form-data
-    const meals =
-      typeof req.body.meals === "string"
-        ? JSON.parse(req.body.meals)
-        : req.body.meals;
+  // meals comes as STRING from form-data
+  const meals =
+    typeof req.body.meals === "string"
+      ? JSON.parse(req.body.meals)
+      : req.body.meals;
 
-    const date = req.body.date;
-    const dateStr = dayjs(date).format("YYYY-MM-DD");
-    const todayStr = dayjs().format("YYYY-MM-DD");
+  const date = req.body.date;
+  const dateStr = dayjs(date).format("YYYY-MM-DD");
+  const todayStr = dayjs().format("YYYY-MM-DD");
 
-    // ---------------- FILES ----------------
-    const files = req.files as {
-      breakfastImage?: Express.Multer.File[];
-      lunchImage?: Express.Multer.File[];
-      dinnerImage?: Express.Multer.File[];
-    };
+  // ---------------- FILES ----------------
 
-    const imageMap: Record<string, string | null> = {
-      breakfast: files?.breakfastImage?.[0]?.path
-        ? normalizePath(files.breakfastImage[0].path)
-        : null,
-      lunch: files?.lunchImage?.[0]?.path
-        ? normalizePath(files.lunchImage[0].path)
-        : null,
-      dinner: files?.dinnerImage?.[0]?.path
-        ? normalizePath(files.dinnerImage[0].path)
-        : null,
-    };
+  const files = req.files as {
+    breakfastImage?: Express.Multer.File[];
+    lunchImage?: Express.Multer.File[];
+    dinnerImage?: Express.Multer.File[];
+  };
 
-    // ---------------- DATE VALIDATION ----------------
-    if (dayjs(dateStr).isBefore(todayStr)) {
-      throw new ApiError(400, "You cannot plan meals for previous days");
-    }
+  const imageMap: Record<string, string | null> = {
+    breakfast: files?.breakfastImage?.[0]?.path
+      ? normalizePath(files.breakfastImage[0].path)
+      : null,
+    lunch: files?.lunchImage?.[0]?.path
+      ? normalizePath(files.lunchImage[0].path)
+      : null,
+    dinner: files?.dinnerImage?.[0]?.path
+      ? normalizePath(files.dinnerImage[0].path)
+      : null,
+  };
 
-    // ---------------- PLAN LIMITS ----------------
-    const weeklyLimit = subscription?.planId?.limits?.mealsPerWeek ?? 1;
-    const monthlyLimit = subscription?.planId?.limits?.mealsPerMonth ?? 4;
+  // ---------------- DATE VALIDATION ----------------
+  if (dayjs(dateStr).isBefore(todayStr)) {
+    throw new ApiError(400, "You cannot plan meals for previous days");
+  }
 
-    // ---------------- SELECTED MEALS ----------------
-    const ALLOWED_MEALS = ["breakfast", "lunch", "dinner"] as const;
-    type MealType = (typeof ALLOWED_MEALS)[number];
+  // ---------------- PLAN LIMITS ----------------
+  const weeklyLimit = subscription?.planId?.limits?.mealsPerWeek ?? 1;
+  const monthlyLimit = subscription?.planId?.limits?.mealsPerMonth ?? 4;
 
-    const selectedMeals: MealType[] = Object.keys(meals).filter(
-      (m): m is MealType =>
-        ALLOWED_MEALS.includes(m as MealType) &&
-        Array.isArray(meals[m]) &&
-        meals[m].length > 0,
-    );
+  // ---------------- SELECTED MEALS ----------------
+  const ALLOWED_MEALS = ["breakfast", "lunch", "dinner"] as const;
+  type MealType = (typeof ALLOWED_MEALS)[number];
 
-    if (!selectedMeals.length) {
-      throw new ApiError(400, "No meals selected");
-    }
+  const selectedMeals: MealType[] = Object.keys(meals).filter(
+    (m): m is MealType =>
+      ALLOWED_MEALS.includes(m as MealType) &&
+      Array.isArray(meals[m]) &&
+      meals[m].length > 0,
+  );
 
-    // ----------------  NORMALIZE INPUT TO ENGLISH ----------------
-    if (lang !== "en") {
-      for (const mealType of selectedMeals) {
-        for (const meal of meals[mealType]) {
-          if (meal.description) {
-            meal.description = await translateText(meal.description, "en");
-          }
+  if (!selectedMeals.length) {
+    throw new ApiError(400, "No meals selected");
+  }
 
-          if (Array.isArray(meal.ingredients)) {
-            meal.ingredients = await Promise.all(
-              meal.ingredients.map((i: string) => translateText(i, "en")),
-            );
-          }
-
-          if (Array.isArray(meal.caloryCount)) {
-            for (const c of meal.caloryCount) {
-              c.label = await translateText(c.label, "en");
-            }
-          }
-        }
-      }
-    }
-
-    // ---------------- CREATE MEALS ----------------
-    const mealGroupId = uniqid();
-    const mealDocs: any[] = [];
-
+  // ----------------  NORMALIZE INPUT TO ENGLISH ----------------
+  if (lang !== "en") {
     for (const mealType of selectedMeals) {
       for (const meal of meals[mealType]) {
-        const caloryCount = meal.caloryCount || [];
-        const totalKcal = caloryCount.reduce(
-          (sum: number, i: any) => sum + i.kcal,
-          0,
-        );
-
-        mealDocs.push({
-          userId,
-          mealGroupId,
-          planDate: dateStr,
-          mealType,
-          description: meal.description,
-          ingredients: meal.ingredients || [],
-          caloryCount,
-          image: imageMap[mealType],
-          date,
-          kcal: totalKcal,
-        });
-      }
-    }
-
-    const savedMeals = await MealModel.insertMany(mealDocs);
-
-    // ----------------  TRANSLATE RESPONSE ----------------
-    if (lang !== "en") {
-      for (const meal of savedMeals) {
-        meal.description = await translateText(meal.description, lang);
+        if (meal.description) {
+          meal.description = await translateText(meal.description, "en");
+        }
 
         if (Array.isArray(meal.ingredients)) {
           meal.ingredients = await Promise.all(
-            meal.ingredients.map((i: string) => translateText(i, lang)),
+            meal.ingredients.map((i: string) => translateText(i, "en")),
           );
         }
 
         if (Array.isArray(meal.caloryCount)) {
           for (const c of meal.caloryCount) {
-            c.label = await translateText(c.label, lang);
+            c.label = await translateText(c.label, "en");
           }
         }
       }
     }
-
-    return savedMeals;
-  } catch (err) {
-    console.log(err);
   }
+
+  // ---------------- CREATE MEALS ----------------
+  const mealGroupId = uniqid();
+  const mealDocs: any[] = [];
+
+  for (const mealType of selectedMeals) {
+    for (const meal of meals[mealType]) {
+      const caloryCount = meal.caloryCount || [];
+      const totalKcal = caloryCount.reduce(
+        (sum: number, i: any) => sum + i.kcal,
+        0,
+      );
+
+      mealDocs.push({
+        userId,
+        mealName: meal.mealName,
+        mealGroupId,
+        planDate: dateStr,
+        mealType,
+        description: meal.description,
+        ingredients: meal.ingredients || [],
+        caloryCount,
+        image: imageMap[mealType],
+        date,
+        kcal: totalKcal,
+      });
+    }
+  }
+
+  const savedMeals = await MealModel.insertMany(mealDocs);
+
+  // ----------------  TRANSLATE RESPONSE ----------------
+  if (lang !== "en") {
+    for (const meal of savedMeals) {
+      meal.description = await translateText(meal.description, lang);
+
+      if (Array.isArray(meal.ingredients)) {
+        meal.ingredients = await Promise.all(
+          meal.ingredients.map((i: string) => translateText(i, lang)),
+        );
+      }
+
+      if (Array.isArray(meal.caloryCount)) {
+        for (const c of meal.caloryCount) {
+          c.label = await translateText(c.label, lang);
+        }
+      }
+    }
+  }
+
+  return savedMeals;
 };
 
 export const getCurrentMealsService = async (req: any) => {
