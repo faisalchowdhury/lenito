@@ -556,9 +556,6 @@ export const getCurrentMealsService = async (req: any) => {
             meal.ingredients.map((item: string) => translateText(item, lang)),
           );
         }
-
-        //  DO NOT translate:
-        // mealType, kcal, image, date, ids
       }
 
       mealPlan[meal.mealType] = translatedMeal;
