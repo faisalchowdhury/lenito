@@ -570,12 +570,13 @@ export const getCurrentMealsService = async (req: any) => {
 // recent meal chosen
 export const myRecentMeals = async (req: any) => {
   try {
+    const mealType = req.params.mealType;
     const user = req.user as JwtPayloadWithUser;
     const userId = user.id;
     const lang = req.lang || "en";
 
-    const meals = await MealModel.find({ userId })
-      .limit(5)
+    const meals = await MealModel.find({ userId, mealType })
+      .limit(2)
       .sort({ createdAt: -1 })
       .lean();
 

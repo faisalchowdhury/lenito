@@ -29,7 +29,12 @@ router.post(
   createMeals,
 );
 router.get("/get-meals", guardRole(["user"]), detectLanguage, getCurrentMeals);
-router.get("/recent-meals", guardRole(["user"]), detectLanguage, recentMeals);
+router.get(
+  "/recent-meals/:mealType",
+  guardRole(["user"]),
+  detectLanguage,
+  recentMeals,
+);
 router.patch(
   "/swap-meal/:mealId",
   guardRole(["user"]),
