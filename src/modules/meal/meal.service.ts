@@ -494,6 +494,7 @@ export const createMealService = async (req: any) => {
         caloryCount,
         image: imageMap[mealType],
         date,
+        serving: meal.serving,
         kcal: totalKcal,
       });
     }

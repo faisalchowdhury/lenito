@@ -14,5 +14,6 @@ export interface IMeal extends Document {
   mealGroupId: string;
   image: string;
   date: Date;
+  serving: number;
   status: string;
 }

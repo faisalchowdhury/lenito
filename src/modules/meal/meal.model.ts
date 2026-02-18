@@ -17,6 +17,7 @@ const mealSchema = new Schema<IMeal>({
   mealGroupId: { type: String, required: true },
   image: { type: String, required: true },
   date: { type: Date, required: true },
+  serving: { type: Number, required: true },
   status: {
     type: String,
     default: "not_yet_done",

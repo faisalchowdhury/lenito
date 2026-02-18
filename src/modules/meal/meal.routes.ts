@@ -19,7 +19,7 @@ const router = express.Router();
 router.post(
   "/create-meals",
   guardRole(["user"]),
-  accessControl({ forWorkout: false }),
+  // accessControl({ forWorkout: false }),
   upload.fields([
     { name: "breakfastImage", maxCount: 1 },
     { name: "lunchImage", maxCount: 1 },
