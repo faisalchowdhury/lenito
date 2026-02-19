@@ -14,7 +14,7 @@ const healthDetailsSchema = new Schema<IHealth_details>({
   diet: {
     type: String,
     required: true,
-    enum: ["classic", "vegan", "pescatarian", "carnivore", "vegetarian"],
+    enum: ["classic", "vegan", "pescatarian", "vegetarian"],
   },
 
   foodAllergies: { type: [String], required: true },

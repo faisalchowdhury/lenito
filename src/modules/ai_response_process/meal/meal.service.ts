@@ -66,8 +66,9 @@ export const generateMealsService = async (req: Request) => {
           carbs: total_daily_macronutrients.carbohydrates,
           protein: total_daily_macronutrients.protein,
           fat: total_daily_macronutrients.fat,
+          main_goal: "Stay Fit",
           language: "en",
-          generate_images: true,
+          generate_images: false,
         },
       },
     );
