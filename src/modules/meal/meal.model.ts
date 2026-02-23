@@ -5,6 +5,11 @@ const CaloryItemSchema = new Schema({
   label: { type: String, required: true },
   kcal: { type: Number, required: true },
 });
+const IngredientsSchema = new Schema({
+  name: { type: String, required: true },
+  quantity: { type: String, required: true },
+  icon: { type: String, required: true },
+});
 
 const mealSchema = new Schema<IMeal>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -13,7 +18,10 @@ const mealSchema = new Schema<IMeal>({
   kcal: { type: Number, required: true },
   description: { type: String, required: true },
   caloryCount: { type: [CaloryItemSchema], required: true },
-  ingredients: { type: [String], required: true },
+  ingredients: {
+    type: [IngredientsSchema],
+    required: true,
+  },
   mealGroupId: { type: String, required: true },
   image: { type: String, required: true },
   date: { type: Date, required: true },

@@ -11,6 +11,7 @@ const workoutSchema = new Schema<IWorkout>({
   activityLevel: {
     type: String,
     required: true,
+    enum: ["very_active", "moderately_active", "lightly_active", "sedentary"],
   },
   prefferedWorkout: {
     type: String,
@@ -23,17 +24,13 @@ const workoutSchema = new Schema<IWorkout>({
     required: true,
   },
   focusArea: {
-    type: String,
+    type: [String],
     enum: ["arms", "upper_body", "abs", "butt", "legs"],
-    required: true,
-  },
-  desiredWeight: {
-    type: Number,
     required: true,
   },
 });
 
 export const WorkoutModel = mongoose.model<IWorkout>(
   "WorkoutDetails",
-  workoutSchema
+  workoutSchema,
 );

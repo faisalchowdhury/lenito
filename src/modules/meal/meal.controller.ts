@@ -7,6 +7,7 @@ import {
   createSingleMealService,
   deleteMealService,
   getCurrentMealsService,
+  getMealsByDateService,
   getMealService,
   myRecentMeals,
   swapMealService,
@@ -103,6 +104,19 @@ export const createSingleMeal = catchAsync(
       success: true,
       message: "Meal created successfully",
       data: createSingleMeal,
+    });
+  },
+);
+
+export const getMealsBydate = catchAsync(
+  async (req: Request, res: Response) => {
+    const getMealsBydate = await getMealsByDateService(req);
+
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Meals fetched successfully",
+      data: getMealsBydate,
     });
   },
 );

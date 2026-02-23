@@ -3,6 +3,12 @@ export interface ICaloryItem {
   label: string;
   kcal: number;
 }
+
+interface Ingredient {
+  name: string;
+  quantity: string;
+  icon: string;
+}
 export interface IMeal extends Document {
   userId: Types.ObjectId;
   mealName: string;
@@ -10,7 +16,7 @@ export interface IMeal extends Document {
   kcal: number;
   description: string;
   caloryCount: ICaloryItem[];
-  ingredients: string[];
+  ingredients: Ingredient[];
   mealGroupId: string;
   image: string;
   date: Date;

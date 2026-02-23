@@ -6,6 +6,7 @@ import {
   deleteMeal,
   getCurrentMeals,
   getMeal,
+  getMealsBydate,
   recentMeals,
   swapMeal,
   updateMealStatus,
@@ -55,5 +56,5 @@ router.post(
   upload.single("mealImage"),
   createSingleMeal,
 );
-
+router.get("/get-meals-by-date", guardRole(["user"]), getMealsBydate);
 export const MealRoutes = router;

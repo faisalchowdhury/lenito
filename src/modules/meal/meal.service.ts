@@ -391,7 +391,7 @@ export const createMealService = async (req: any) => {
   const user = req.user as JwtPayloadWithUser;
   const subscription = req.subscription;
   const lang = req.lang || "en";
-
+  const current = req.query?.current || false;
   const userId = user.id;
 
   // meals comes as STRING from form-data
@@ -403,6 +403,8 @@ export const createMealService = async (req: any) => {
   const date = req.body.date;
   const dateStr = dayjs(date).format("YYYY-MM-DD");
   const todayStr = dayjs().format("YYYY-MM-DD");
+
+  const dateData = current ? dayjs().format("YYYY-MM-DD") : date;
 
   // ---------------- FILES ----------------
 
@@ -493,7 +495,7 @@ export const createMealService = async (req: any) => {
         ingredients: meal.ingredients || [],
         caloryCount,
         image: imageMap[mealType],
-        date,
+        date: dateData,
         serving: meal.serving,
         kcal: totalKcal,
       });
@@ -552,17 +554,17 @@ export const getCurrentMealsService = async (req: any) => {
         }
 
         // Translate ingredients array
-        if (Array.isArray(meal.ingredients)) {
-          translatedMeal.ingredients = await Promise.all(
-            meal.ingredients.map((item: string) => translateText(item, lang)),
-          );
-        }
+        // if (Array.isArray(meal.ingredients)) {
+        //   translatedMeal.ingredients = await Promise.all(
+        //     meal.ingredients.map((item: string) => translateText(item, lang)),
+        //   );
+        // }
       }
 
       mealPlan[meal.mealType] = translatedMeal;
     }
 
-    return mealPlan;
+    return meals;
   } catch (error) {
     throw error;
   }
@@ -583,29 +585,29 @@ export const myRecentMeals = async (req: any) => {
 
     const mealPlans: any[] = [];
 
-    for (const meal of meals) {
-      const translatedMeal: any = {
-        ...meal,
-        mealType: meal.mealType, // explicitly included
-      };
+    // for (const meal of meals) {
+    //   const translatedMeal: any = {
+    //     ...meal,
+    //     mealType: meal.mealType, // explicitly included
+    //   };
 
-      if (lang !== "en") {
-        if (meal.description) {
-          translatedMeal.description = await translateText(
-            meal.description,
-            lang,
-          );
-        }
+    //   if (lang !== "en") {
+    //     if (meal.description) {
+    //       translatedMeal.description = await translateText(
+    //         meal.description,
+    //         lang,
+    //       );
+    //     }
 
-        if (Array.isArray(meal.ingredients)) {
-          translatedMeal.ingredients = await Promise.all(
-            meal.ingredients.map((item: string) => translateText(item, lang)),
-          );
-        }
-      }
+    //     if (Array.isArray(meal.ingredients)) {
+    //       translatedMeal.ingredients = await Promise.all(
+    //         meal.ingredients.map((item: string) => translateText(item, lang)),
+    //       );
+    //     }
+    //   }
 
-      mealPlans.push(translatedMeal);
-    }
+    //   mealPlans.push(translatedMeal);
+    // }
 
     return mealPlans;
   } catch (error) {
@@ -738,11 +740,11 @@ export const getMealService = async (req: any) => {
       }
 
       // ingredients
-      if (Array.isArray(meal.ingredients)) {
-        meal.ingredients = await Promise.all(
-          meal.ingredients.map((item: string) => translateText(item, lang)),
-        );
-      }
+      // if (Array.isArray(meal.ingredients)) {
+      //   meal.ingredients = await Promise.all(
+      //     meal.ingredients.map((item: string) => translateText(item, lang)),
+      //   );
+      // }
 
       // caloryCount labels
       if (Array.isArray(meal.caloryCount)) {
@@ -969,6 +971,26 @@ export const createSingleMealService = async (req: Request) => {
     });
 
     return newMeal;
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+export const getMealsByDateService = async (req: any) => {
+  try {
+    const user = req.user as JwtPayloadWithUser;
+    const userId = user.id;
+    const date = req.body.date;
+
+    if (!date) {
+      throw new ApiError(400, "Date is required");
+    }
+
+    const dateStr = dayjs(date).format("YYYY-MM-DD");
+
+    const meals = await MealModel.find({ userId, date: dateStr });
+
+    return meals;
   } catch (err) {
     console.log(err);
   }

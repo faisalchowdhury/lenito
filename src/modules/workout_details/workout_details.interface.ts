@@ -6,6 +6,5 @@ export interface IWorkout extends Document {
   activityLevel: string;
   prefferedWorkout: string;
   goal: string;
-  focusArea: string;
-  desiredWeight: number;
+  focusArea: string[];
 }
