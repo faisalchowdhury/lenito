@@ -7,6 +7,7 @@ import {
   generateMealsService,
   scanFoodService,
 } from "./meal.service";
+import { mealQueue } from "../../../queues/meal.queues";
 
 export const getMeals = catchAsync(async (req: Request, res: Response) => {
   const generateMeals = await generateMealsService(req);
@@ -51,3 +52,51 @@ export const scanFood = catchAsync(async (req: Request, res: Response) => {
     data: scanFood,
   });
 });
+
+/////////////////////////////////////////
+export const getMealJobStatus = async (req: Request, res: Response) => {
+  try {
+    const { jobId } = req.params;
+
+    if (!jobId) {
+      return res.status(400).json({
+        status: "error",
+        message: "jobId is required",
+      });
+    }
+
+    const job = await mealQueue.getJob(jobId);
+
+    if (!job) {
+      return res.status(404).json({
+        status: "not_found",
+      });
+    }
+
+    const state = await job.getState();
+
+    if (state === "completed") {
+      return res.json({
+        status: "completed",
+        result: job.returnvalue,
+      });
+    }
+
+    if (state === "failed") {
+      return res.json({
+        status: "failed",
+        error: job.failedReason,
+      });
+    }
+
+    return res.json({
+      status: state, // waiting | active | delayed
+    });
+  } catch (error) {
+    console.error("getMealJobStatus error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+    });
+  }
+};

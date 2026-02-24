@@ -7,7 +7,7 @@ import notFound from "./middlewares/notFound";
 import router from "./routes";
 import { logger, logHttpRequests } from "./logger/logger";
 import { template } from "./rootTemplate";
-
+import "../src/workers/meal.worker";
 // Create an Express application
 const app: Application = express();
 app.use(logHttpRequests);
@@ -26,7 +26,7 @@ app.use(
       "https://barber-admin-dashboard-knvz8p4zy-faisal-chowdhurys-projects.vercel.app",
     ],
     credentials: true,
-  })
+  }),
 );
 
 app.use(express.static("public"));

@@ -4,80 +4,94 @@ import { HealthDetailsModel } from "../../health_details/health_details.model";
 import { JwtPayloadWithUser } from "../../../middlewares/userVerification";
 import { WorkoutModel } from "../../workout_details/workout_details.model";
 import sendResponse from "../../../utils/sendResponse";
+import { mealQueue } from "../../../queues/meal.queues";
+
+// export const generateMealsService = async (req: Request) => {
+//   try {
+//     const user = req.user as JwtPayloadWithUser;
+//     const userId = user.id;
+
+//     const health = await HealthDetailsModel.findOne({ userId }).lean();
+
+//     if (!health) {
+//       throw new Error("Health details not found");
+//     }
+
+//     const {
+//       bloodGroup,
+//       diet,
+//       age,
+//       weight,
+//       height,
+//       country,
+//       foodAllergies = [],
+//       foodDislikes = [],
+//     } = health;
+
+//     //  STEP 1: Calculate daily nutrition
+//     const calorieResponse = await axios.get(
+//       `${process.env.AI_SERVER_BASE}/meal/calculate-daily-nutrition`,
+//       {
+//         params: {
+//           user_id: userId,
+//           blood_type: bloodGroup,
+//           diet_type: diet,
+//           age,
+//           weight,
+//           height,
+//           activity_level: "moderate",
+//           health_goals: "maintain weight",
+//         },
+//         timeout: 0,
+//       },
+//     );
+
+//     const { total_daily_calories, total_daily_macronutrients } =
+//       calorieResponse.data;
+
+//     //  STEP 2: Generate meal plan
+//     const mealPlanResponse = await axios.get(
+//       `${process.env.AI_SERVER_BASE}/meal/generate-meal-plan`,
+//       {
+//         params: {
+//           user_id: userId,
+//           blood_type: bloodGroup,
+//           diet_type: diet,
+//           age,
+//           weight,
+//           height,
+//           country,
+//           food_dislikes: foodDislikes.join(","),
+//           allergies: foodAllergies.join(","),
+//           total_daily_calories,
+//           carbs: total_daily_macronutrients.carbohydrates,
+//           protein: total_daily_macronutrients.protein,
+//           fat: total_daily_macronutrients.fat,
+//           main_goal: "Stay Fit",
+//           language: "en",
+//           generate_images: true,
+//         },
+//       },
+//     );
+
+//     return mealPlanResponse.data;
+//   } catch (error) {
+//     console.error(" generateMealsService error:", error);
+//     throw error;
+//   }
+// };
 
 export const generateMealsService = async (req: Request) => {
-  try {
-    const user = req.user as JwtPayloadWithUser;
-    const userId = user.id;
+  const user = req.user as JwtPayloadWithUser;
 
-    const health = await HealthDetailsModel.findOne({ userId }).lean();
+  const job = await mealQueue.add("generate-meal", {
+    userId: user.id,
+  });
 
-    if (!health) {
-      throw new Error("Health details not found");
-    }
-
-    const {
-      bloodGroup,
-      diet,
-      age,
-      weight,
-      height,
-      country,
-      foodAllergies = [],
-      foodDislikes = [],
-    } = health;
-
-    //  STEP 1: Calculate daily nutrition
-    const calorieResponse = await axios.get(
-      `${process.env.AI_SERVER_BASE}/meal/calculate-daily-nutrition`,
-      {
-        params: {
-          user_id: userId,
-          blood_type: bloodGroup,
-          diet_type: diet,
-          age,
-          weight,
-          height,
-          activity_level: "moderate",
-          health_goals: "maintain weight",
-        },
-        timeout: 0,
-      },
-    );
-
-    const { total_daily_calories, total_daily_macronutrients } =
-      calorieResponse.data;
-
-    //  STEP 2: Generate meal plan
-    const mealPlanResponse = await axios.get(
-      `${process.env.AI_SERVER_BASE}/meal/generate-meal-plan`,
-      {
-        params: {
-          user_id: userId,
-          blood_type: bloodGroup,
-          diet_type: diet,
-          age,
-          weight,
-          height,
-          country,
-          food_dislikes: foodDislikes.join(","),
-          allergies: foodAllergies.join(","),
-          total_daily_calories,
-          carbs: total_daily_macronutrients.carbohydrates,
-          protein: total_daily_macronutrients.protein,
-          fat: total_daily_macronutrients.fat,
-          main_goal: "Stay Fit",
-          language: "en",
-          generate_images: false,
-        },
-      },
-    );
-
-    return mealPlanResponse.data;
-  } catch (error) {
-    console.error(" generateMealsService error:", error);
-    throw error;
-  }
+  return {
+    jobId: job.id,
+    status: "processing",
+  };
 };
 
 export const calorieIntakeService = async (req: Request) => {

@@ -3,6 +3,7 @@ import { guardRole } from "../../../middlewares/roleGuard";
 import {
   calorieIntake,
   generateMealImage,
+  getMealJobStatus,
   getMeals,
   scanFood,
 } from "./meal.controller";
@@ -15,4 +16,5 @@ route.get("/daily-calorie-intake", guardRole("user"), calorieIntake);
 route.post("/generate-meal-image", guardRole("user"), generateMealImage);
 route.post("/scan-food", guardRole("user"), upload.single("image"), scanFood);
 
+route.get("/meal-status/:jobId", getMealJobStatus);
 export const AiMealRoutes = route;

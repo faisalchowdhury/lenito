@@ -42,12 +42,13 @@ export const getCurrentMeals = catchAsync(
   },
 );
 export const recentMeals = catchAsync(async (req: Request, res: Response) => {
+  const mealType = req.params.mealType;
   const recentMeals = await myRecentMeals(req);
 
   return sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "Recent meals fetched successfully",
+    message: `Recent ${mealType} meals fetched successfully`,
     data: recentMeals,
   });
 });

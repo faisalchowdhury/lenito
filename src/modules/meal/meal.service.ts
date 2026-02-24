@@ -583,7 +583,7 @@ export const myRecentMeals = async (req: any) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    const mealPlans: any[] = [];
+    // const mealPlans: any[] = [];
 
     // for (const meal of meals) {
     //   const translatedMeal: any = {
@@ -609,7 +609,7 @@ export const myRecentMeals = async (req: any) => {
     //   mealPlans.push(translatedMeal);
     // }
 
-    return mealPlans;
+    return meals;
   } catch (error) {
     throw error;
   }
