@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket Test</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  </head>
+  <body>
+    <h2>Socket Test</h2>
+
+    <script>
+      const socket = io("http://localhost:5000", {
+        auth: {
+          token:
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ODQxYTQwYWUxNWY0NTNkZTVmZWM4NSIsInJvbGUiOiJ1c2VyIiwiZW1haWwiOiJiYW1lZHJmZWZkZmRnQGNhbWVsdG9rLmNvbSIsImlhdCI6MTc3MTkwOTkxNiwiZXhwIjoxNzcyNTE0NzE2fQ.vTLkfcwzCInkGMobgHmHo3m5jP6Vs8R0CGfFocEB9uc",
+        },
+      });
+
+      socket.on("connect", () => {
+        console.log("Connected:", socket.id);
+      });
+
+      socket.on("meal-generated", (data) => {
+        console.log("Meal Received:", data);
+      });
+
+      socket.on("disconnect", () => {
+        console.log("Disconnected");
+      });
+    </script>
+  </body>
+</html>

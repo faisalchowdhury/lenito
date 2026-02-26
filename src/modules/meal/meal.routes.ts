@@ -56,5 +56,5 @@ router.post(
   upload.single("mealImage"),
   createSingleMeal,
 );
-router.get("/get-meals-by-date", guardRole(["user"]), getMealsBydate);
+router.post("/get-meals-by-date", guardRole(["user"]), getMealsBydate);
 export const MealRoutes = router;

@@ -34,7 +34,7 @@ const sendResponse = (
   statusCode: number,
   status: string,
   message: string,
-  data?: any
+  data?: any,
 ) => ({
   statusCode,
   status,
@@ -69,8 +69,8 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       return next(
         new ApiError(
           httpStatus.UNAUTHORIZED,
-          "Authentication error: Token missing"
-        )
+          "Authentication error: Token missing",
+        ),
       );
     }
 
@@ -101,7 +101,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
     if (socket.user && socket.user._id) {
       connectedUsers.set(socket.user._id.toString(), { socketID: socket.id });
       console.log(
-        `Registered user ${socket.user._id.toString()} with socket ID: ${socket.id}`
+        `Registered user ${socket.user._id.toString()} with socket ID: ${socket.id}`,
       );
     }
 
@@ -113,7 +113,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
 
     socket.on("disconnect", () => {
       console.log(
-        `${socket.user?.name} || ${socket.user?.email} || ${socket.user?._id} just disconnected with socket ID: ${socket.id}`
+        `${socket.user?.name} || ${socket.user?.email} || ${socket.user?._id} just disconnected with socket ID: ${socket.id}`,
       );
 
       // Remove user from connectedUsers map
