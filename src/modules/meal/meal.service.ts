@@ -432,8 +432,8 @@ export const createMealService = async (req: any) => {
   }
 
   // ---------------- PLAN LIMITS ----------------
-  const weeklyLimit = subscription?.planId?.limits?.mealsPerWeek ?? 1;
-  const monthlyLimit = subscription?.planId?.limits?.mealsPerMonth ?? 4;
+  const weeklyLimit = subscription?.planId?.limits?.mealsPerWeek ?? 3;
+  const monthlyLimit = subscription?.planId?.limits?.mealsPerMonth ?? 12;
 
   // ---------------- SELECTED MEALS ----------------
   const ALLOWED_MEALS = ["breakfast", "lunch", "dinner"] as const;
