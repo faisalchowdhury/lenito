@@ -1,6 +1,7 @@
 import express from "express";
 import { guardRole } from "../../middlewares/roleGuard";
 import {
+  billingSummary,
   createSubscription,
   getSubscriptions,
   upgradeSubscription,
@@ -10,4 +11,5 @@ const route = express.Router();
 route.post("/create-subscription", guardRole("user"), createSubscription);
 route.post("/upgrade-plan", guardRole("user"), upgradeSubscription);
 route.get("/plans", guardRole("user"), getSubscriptions);
+route.get("/billing/:planId/:billing", guardRole("user"), billingSummary);
 export const SubscriptionRoutes = route;

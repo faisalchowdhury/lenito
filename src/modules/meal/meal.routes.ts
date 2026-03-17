@@ -9,6 +9,7 @@ import {
   getMealsBydate,
   recentMeals,
   swapMeal,
+  swapMealOptions,
   updateMealStatus,
 } from "./meal.controller";
 import { accessControl } from "../../middlewares/accessControl";
@@ -36,6 +37,9 @@ router.get(
   detectLanguage,
   recentMeals,
 );
+
+router.get("/swap-meal-option", guardRole("user"), swapMealOptions);
+
 router.patch(
   "/swap-meal/:mealId",
   guardRole(["user"]),

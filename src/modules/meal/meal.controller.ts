@@ -10,6 +10,7 @@ import {
   getMealsByDateService,
   getMealService,
   myRecentMeals,
+  swapMealOptionsService,
   swapMealService,
   updateMealStatusService,
 } from "./meal.service";
@@ -52,6 +53,19 @@ export const recentMeals = catchAsync(async (req: Request, res: Response) => {
     data: recentMeals,
   });
 });
+
+export const swapMealOptions = catchAsync(
+  async (req: Request, res: Response) => {
+    const swapMealOptions = await swapMealOptionsService(req);
+
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Swap meal options fetched",
+      data: swapMealOptions,
+    });
+  },
+);
 
 export const swapMeal = catchAsync(async (req: Request, res: Response) => {
   const swapMeal = await swapMealService(req);

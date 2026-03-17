@@ -4,6 +4,7 @@ import { JwtPayloadWithUser } from "../../middlewares/userVerification";
 import { PlanModel } from "../plan/plan.model";
 import { SubscriptionModel } from "./subscription.model";
 import sendResponse from "../../utils/sendResponse";
+import { billingSummaryService } from "./subscription.service";
 
 export const createSubscription = async (req: Request, res: Response) => {
   try {
@@ -157,13 +158,13 @@ export const upgradeSubscription = async (req: Request, res: Response) => {
     const totalDays = Math.max(
       1,
       Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-      )
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+      ),
     );
 
     const usedDays = Math.max(
       0,
-      Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)),
     );
 
     const remainingDays = Math.max(0, totalDays - usedDays);
@@ -242,4 +243,15 @@ export const getSubscriptions = async (req: Request, res: Response) => {
   } catch (err) {
     console.log(err);
   }
+};
+
+export const billingSummary = async (req: Request, res: Response) => {
+  const billingSummary = await billingSummaryService(req);
+
+  return sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Billing summary fetched successfully",
+    data: billingSummary,
+  });
 };

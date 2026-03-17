@@ -34,5 +34,5 @@ export const FIREBASE_SERVICE_ACCOUNT_PATH =
   process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
   path.resolve(
     process.cwd(),
-    "src/config/chorefit-ceefb-firebase-adminsdk-fbsvc-4d9a708a0d.json"
+    "src/config/chorefit-ceefb-firebase-adminsdk-fbsvc-4d9a708a0d.json",
   );

@@ -7,6 +7,8 @@ import { Types } from "mongoose";
 import dayjs from "dayjs";
 import { MealUsageModel } from "../meal_usage/meal_usage.model";
 import { translateText } from "../../services/translate.service";
+import axios from "axios";
+import { HealthDetailsModel } from "../health_details/health_details.model";
 
 // create meal service
 // previous logic
@@ -612,6 +614,41 @@ export const myRecentMeals = async (req: any) => {
     return meals;
   } catch (error) {
     throw error;
+  }
+};
+
+// swap meal Options
+
+export const swapMealOptionsService = async (req: any) => {
+  try {
+    const { category, sub_category, current_calories } = req.query;
+
+    const user = req.user as JwtPayloadWithUser;
+    const userId = user.id;
+
+    const health: any = await HealthDetailsModel.findOne({ userId });
+    const params = {
+      user_id: userId,
+      blood_type: health.bloodGroup,
+      diet_type: health.diet,
+      category,
+      sub_category,
+      current_calories,
+      country: health.country,
+      food_dislike: health.foodDislikes.join(","),
+      allergies: health.foodAllergies.join(","),
+      language: "en",
+      generate_images: true,
+    };
+    console.log(params);
+    const response = await axios.get("http://localhost:8000/meal/swap-meal", {
+      params,
+    });
+
+    return response.data;
+  } catch (err: any) {
+    console.error("Swap meal error:", err?.response?.data || err.message);
+    throw err;
   }
 };
 

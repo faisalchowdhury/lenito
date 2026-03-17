@@ -21,6 +21,7 @@ import { ProgressRoutes } from "../modules/progress/progress.routes";
 import { FaqRoutes } from "../modules/faq/FAQ.router";
 import { AiMealRoutes } from "../modules/ai_response_process/meal/meal.routes";
 import { CalorieRoutes } from "../modules/calories/calories.routes";
+import { PromocodeRoutes } from "../modules/promocode/promocode.route";
 
 // import { PaymentRoute } from "../modules/unused_payments/payment.route";
 
@@ -37,6 +38,7 @@ export const routesConfig = [
   { path: "faq", handler: FaqRoutes },
   { path: "ai-meal", handler: AiMealRoutes },
   { path: "calorie", handler: CalorieRoutes },
+  { path: "promocode", handler: PromocodeRoutes },
 
   { path: "terms", handler: TermsRoutes },
   { path: "about", handler: AboutRoutes },

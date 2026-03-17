@@ -120,6 +120,7 @@ export const mealWorker = new Worker(
       weight,
       height,
       country,
+      goal,
       foodAllergies = [],
       foodDislikes = [],
     } = health;
@@ -135,7 +136,7 @@ export const mealWorker = new Worker(
           age,
           weight,
           height,
-          activity_level: "moderate",
+          activity_level: health.goal,
           health_goals: "maintain weight",
         },
       },
@@ -162,13 +163,31 @@ export const mealWorker = new Worker(
           carbs: total_daily_macronutrients.carbohydrates,
           protein: total_daily_macronutrients.protein,
           fat: total_daily_macronutrients.fat,
-          main_goal: "Stay Fit",
+          main_goal: goal,
           language: "en",
           generate_images: true,
         },
       },
     );
-
+    console.log("total..........", total_daily_calories);
+    console.log({
+      user_id: userId,
+      blood_type: bloodGroup,
+      diet_type: diet,
+      age,
+      weight,
+      height,
+      country,
+      food_dislikes: foodDislikes.join(","),
+      allergies: foodAllergies.join(","),
+      total_daily_calories,
+      carbs: total_daily_macronutrients.carbohydrates,
+      protein: total_daily_macronutrients.protein,
+      fat: total_daily_macronutrients.fat,
+      main_goal: goal,
+      language: "en",
+      generate_images: true,
+    });
     return mealPlanResponse.data;
   },
   { connection },
