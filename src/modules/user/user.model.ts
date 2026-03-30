@@ -8,7 +8,7 @@ const userSchema = new Schema<IUser>(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    email: { type: String, required: true, unique: true, index: true },
+    email: { type: String, required: true,  },
     contactNumber: { type: String, required: true },
     role: {
       type: String,
@@ -46,7 +46,7 @@ export const UserModel = mongoose.model<IUser>("User", userSchema);
 // UserModel.schema.index({ role: 1 });
 
 const OTPSchema = new Schema<IOTP>({
-  email: { type: String, required: true, trim: true, index: true },
+  email: { type: String, required: true, trim: true, },
   otp: { type: String, required: true, trim: true },
   expiresAt: { type: Date, required: true, index: { expires: "1m" } },
 });

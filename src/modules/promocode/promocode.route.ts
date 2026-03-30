@@ -44,9 +44,5 @@ router.delete("/:id", guardRole("admin"), deletePromocode);
 // DELETE /api/promocodes/bulk       → delete many by ids array
 router.delete("/bulk", guardRole("admin"), deleteManyPromocodes);
 //
-router.post(
-  "/add-promocode/:planId/:promocode",
-  guardRole("user"),
-  addPromocode,
-);
+router.post("/add-promocode/:planId", guardRole("user"), addPromocode);
 export const PromocodeRoutes = router;

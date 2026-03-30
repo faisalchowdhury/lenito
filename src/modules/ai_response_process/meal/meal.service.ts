@@ -6,6 +6,8 @@ import { WorkoutModel } from "../../workout_details/workout_details.model";
 import sendResponse from "../../../utils/sendResponse";
 import { mealQueue } from "../../../queues/meal.queues";
 import { UserModel } from "../../user/user.model";
+import FormData from "form-data";
+import { ImageStorageModel } from "../../imgStorage/imgStorage.model";
 
 // export const generateMealsService = async (req: Request) => {
 //   try {
@@ -139,9 +141,24 @@ export const generateMealImageService = async (req: Request) => {
 
     const mealImage = await axios.post(imageGenerateEndpoint, payload);
 
+    const isExist = await ImageStorageModel.findOne({
+      mealId: req.params.mealIdAi,
+    });
+
+    if (!isExist) {
+      const mealId = req.params.mealIdAi;
+      const imgRef = mealImage.data.meal_image_base64;
+
+      await ImageStorageModel.create({
+        mealId: req.params.mealIdAi,
+        imgRef,
+      });
+    }
+
     return mealImage.data;
   } catch (err) {
     console.log(err);
+    throw err;
   }
 };
 
@@ -149,7 +166,6 @@ export const scanFoodService = async (req: Request) => {
   const user = req.user as JwtPayloadWithUser;
   const userId = user.id;
 
-  //  Health details
   const health = await HealthDetailsModel.findOne({ userId }).lean();
   if (!health) {
     throw new Error("Health details not found");
@@ -163,40 +179,36 @@ export const scanFoodService = async (req: Request) => {
     foodDislikes = [],
   } = health;
 
-  // Image from multer (food scan needs image)
-
   if (!req.file) {
     throw new Error("Food image is required");
   }
 
-  console.log(req.file);
+  const formData = new FormData();
+  formData.append("image", req.file.buffer, {
+    filename: req.file.originalname,
+    contentType: req.file.mimetype,
+    knownLength: req.file.size,
+  });
 
-  // 🔹 Build AI endpoint
   const endpoint = `${process.env.AI_SERVER_BASE}/meal/scan-food`;
 
-  // 🔹 Call AI server
-  const response = await axios.post(
-    endpoint,
-    {
-      user_id: "123",
-      blood_type: "A",
-      diet_type: "vegan",
-      country: "Korea",
-      allergies: "peanuts, shrimp",
-      food_dislikes: "spicy food, milk",
+  const response = await axios.post(endpoint, formData, {
+    params: {
+      user_id: userId,
+      blood_type: bloodGroup,
+      diet_type: diet,
+      country: country,
+      allergies: foodAllergies.join(", "),
+      food_dislikes: foodDislikes.join(", "),
       language: "en",
     },
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      // If AI server expects image
-      data: {
-        image: req.file,
-      },
-      timeout: 0,
+    headers: {
+      ...formData.getHeaders(),
     },
-  );
+    maxBodyLength: Infinity,
+    maxContentLength: Infinity,
+    timeout: 0,
+  });
 
   return response.data;
 };

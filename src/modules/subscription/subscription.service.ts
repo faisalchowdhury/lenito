@@ -28,11 +28,10 @@ export const billingSummaryService = async (req: any) => {
     userId,
   });
 
-  const isValidPromocode: any = await PromocodeModel.findOne({
-    _id: isPromocodeActive.promocodeId,
-  });
-
   if (isPromocodeActive) {
+    const isValidPromocode: any = await PromocodeModel.findOne({
+      _id: isPromocodeActive.promocodeId,
+    });
     billingRes.totalPrice =
       billingRes.totalPrice - isValidPromocode.discountedPrice;
   }

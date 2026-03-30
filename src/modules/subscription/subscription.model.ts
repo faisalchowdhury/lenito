@@ -8,7 +8,7 @@ const subscriptionSchema = new Schema<ISubscription>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
+      
     },
 
     planId: {
@@ -39,7 +39,7 @@ const subscriptionSchema = new Schema<ISubscription>(
       type: String,
       enum: ["active", "cancelled", "expired", "paused"],
       default: "active",
-      index: true,
+     
     },
 
     // Dates

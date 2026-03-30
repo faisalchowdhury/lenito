@@ -140,7 +140,7 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
     throw new ApiError(404, "your account is deleted.");
   }
   // await validateUserLockStatus(user);
-  const userId = user._id as string;
+  const userId = user._id.toString();
 
   const verifyToken = generateToken({
     id: userId,
@@ -536,7 +536,7 @@ const adminloginUser = catchAsync(async (req: Request, res: Response) => {
       throw new ApiError(401, "Wrong password!");
     }
 
-    const userId = user._id as string;
+    const userId = user._id.toString();
 
     // Generate new token for the logged-in user
     const token = generateTokenForAdmin({

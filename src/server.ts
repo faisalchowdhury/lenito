@@ -10,11 +10,17 @@ import seedSuperAdmin, {
   seedTerms,
 } from "./DB"; // Seeding function
 
+console.log(DATABASE_URL);
+
 import { setupStreakCron } from "./utils/cron.setup";
 import { StreakRoutes } from "./modules/streak/streak.routes";
-
 let server: HttpServer;
+import dns from "dns";
+// Google DNS
+// dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
+// Cloudflare DNS
+dns.setServers(["1.1.1.1", "1.0.0.1"]);
 async function main() {
   try {
     const dbStartTime = Date.now();
@@ -28,7 +34,7 @@ async function main() {
       );
       frameIndex = (frameIndex + 1) % loadingFrames.length;
     }, 300); // Update frame every 300ms
-
+    console.log(".........", DATABASE_URL);
     // Connect to MongoDB with a timeout
     await mongoose.connect(DATABASE_URL as string, {
       connectTimeoutMS: 10000, // 10 seconds timeout

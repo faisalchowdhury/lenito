@@ -14,6 +14,7 @@ export interface IHealth_details extends Document {
   foodAllergies: string[];
   foodDislikes: string[];
   cheatDay?: string;
+  mealPlanDay?: string[];
 }
 
 export interface IWeightHistory extends Document {

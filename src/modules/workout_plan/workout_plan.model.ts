@@ -7,7 +7,7 @@ const workoutPlanSchema = new Schema<IWorkoutPlan>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
+
     },
 
     workoutName: {
@@ -42,7 +42,7 @@ const workoutPlanSchema = new Schema<IWorkoutPlan>(
     workoutDate: {
       type: Date,
       required: true,
-      index: true,
+
     },
   },
   { timestamps: true }

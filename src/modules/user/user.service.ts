@@ -173,7 +173,7 @@ const verifyForgotPasswordOTPService = async (email: string, otp: string) => {
   if (otpRecord.otp !== otp) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Wrong OTP");
   }
-  const userId = user._id as string;
+  const userId = user._id.toString();
   const token = generateToken({
     id: userId,
     role: user.role,

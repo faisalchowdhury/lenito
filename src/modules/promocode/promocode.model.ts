@@ -51,9 +51,6 @@ const userPromocodeSchema: Schema<IUserPromocode> = new Schema(
   },
 );
 
-// Prevent a user from redeeming the same promocode twice
-userPromocodeSchema.index({ userId: 1, promocodeId: 1 }, { unique: true });
-
 // ─────────────────────────────────────────────────────────────
 // MODEL
 // ─────────────────────────────────────────────────────────────

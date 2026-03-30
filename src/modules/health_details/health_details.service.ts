@@ -121,7 +121,7 @@ export const updateWeightService = async (data: Request) => {
   }
 
   //  Update the user's current weight
-  await HealthDetailsModel.updateOne({ userId }, { weight }, { new: true });
+  await HealthDetailsModel.findOneAndUpdate({ userId }, { weight }, { new: true });
 
   //  Record weight history
   await WeightHistoryModel.create({

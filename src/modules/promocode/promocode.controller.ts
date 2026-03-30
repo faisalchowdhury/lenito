@@ -244,7 +244,8 @@ export const addPromocode = async (req: Request, res: Response) => {
   try {
     const user = req.user as JwtPayloadWithUser;
     const userId = user.id;
-    const { planId, promocode } = req.params;
+    const { planId } = req.params;
+    const { promocode } = req.body;
 
     const isValid = await PromocodeModel.findOne({ name: promocode });
 

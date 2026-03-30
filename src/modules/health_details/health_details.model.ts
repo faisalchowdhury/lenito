@@ -19,7 +19,15 @@ const healthDetailsSchema = new Schema<IHealth_details>({
 
   foodAllergies: { type: [String], required: true },
   foodDislikes: { type: [String], required: true },
-  cheatDay: { type: String, required: false },
+  cheatDay: {
+    type: String,
+    required: false,
+    enum: ["sat", "sun", "mon", "tue", "wed", "thu", "fri"],
+  },
+  mealPlanDay: {
+    type: [String],
+    required: false,
+  },
 });
 
 const WeightHistorySchema: Schema = new Schema({

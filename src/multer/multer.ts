@@ -2,8 +2,9 @@ import multer, { FileFilterCallback } from "multer";
 import path from "path";
 import { Express } from "express";
 import { Request } from "express";
-import createHttpError from "http-errors";
+// import createHttpError from "http-errors";
 import { max_file_size, UPLOAD_FOLDER } from "../config";
+import ApiError from "../errors/ApiError";
 
 const UPLOAD_PATH = UPLOAD_FOLDER || "public/images"; // Default image folder
 const MAX_FILE_SIZE = Number(max_file_size) || 5 * 1024 * 1024;
@@ -74,7 +75,7 @@ const fileFilter = (
   const isAllowedFileType = ALLOWED_FILE_TYPES.includes(extName);
 
   if (!isAllowedFileType) {
-    return cb(createHttpError(400, "File type not allowed"));
+    return cb(new Error("File type not allowed"));
   }
 
   cb(null, true);
@@ -87,5 +88,12 @@ const upload = multer({
     fileSize: MAX_FILE_SIZE,
   },
 });
+export const memoryUpload = multer({
+  fileFilter, // reuse same file filter
+  limits: {
+    fileSize: MAX_FILE_SIZE, // reuse same size limit
+  },
+  storage: multer.memoryStorage(), // buffer instead of disk
+});
 
-export default upload;
+export default upload; // keep existing default export

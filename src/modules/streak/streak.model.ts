@@ -16,7 +16,7 @@ const streakSchema = new Schema<IStreak>(
       ref: "User",
       required: true,
       unique: true,
-      index: true,
+      
     },
     currentStreak: {
       type: Number,

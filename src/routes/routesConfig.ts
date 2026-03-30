@@ -22,6 +22,7 @@ import { FaqRoutes } from "../modules/faq/FAQ.router";
 import { AiMealRoutes } from "../modules/ai_response_process/meal/meal.routes";
 import { CalorieRoutes } from "../modules/calories/calories.routes";
 import { PromocodeRoutes } from "../modules/promocode/promocode.route";
+import { ImageStorageRoutes } from "../modules/imgStorage/imgStorage.route";
 
 // import { PaymentRoute } from "../modules/unused_payments/payment.route";
 
@@ -39,6 +40,7 @@ export const routesConfig = [
   { path: "ai-meal", handler: AiMealRoutes },
   { path: "calorie", handler: CalorieRoutes },
   { path: "promocode", handler: PromocodeRoutes },
+  { path: "img-storage", handler: ImageStorageRoutes },
 
   { path: "terms", handler: TermsRoutes },
   { path: "about", handler: AboutRoutes },

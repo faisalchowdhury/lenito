@@ -8,7 +8,7 @@ const MealUsageSchema: Schema = new Schema(
       ref: "User",
       required: true,
       unique: true, // one usage document per user
-      index: true,
+      
     },
 
     mealPlans: [
