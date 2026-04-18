@@ -654,73 +654,117 @@ export const swapMealOptionsService = async (req: any) => {
 
 // swap meal
 
-export const swapMealService = async (req: Request) => {
-  try {
-    const user = req.user as JwtPayloadWithUser;
-    const userId = user.id;
-    const { mealId } = req.params;
+export const swapMealService = async (req: any) => {
+  const user = req.user as JwtPayloadWithUser;
+  const userId = user.id;
+  const lang = req.lang || "en";
+  const { mealId } = req.params;
 
-    if (!mealId) {
-      throw new ApiError(400, "Meal Id is required");
+  if (!mealId) {
+    throw new ApiError(400, "Meal Id is required");
+  }
+
+  // ---------------- PARSE MEAL DATA ----------------
+  // meal comes as STRING from form-data
+  const mealData =
+    typeof req.body.meal === "string"
+      ? JSON.parse(req.body.meal)
+      : req.body.meal;
+
+  if (!mealData) {
+    throw new ApiError(400, "Meal data is required");
+  }
+
+  // ---------------- IMAGE (OPTIONAL) ----------------
+  const file = req.file as Express.Multer.File | undefined;
+  const imagePath = file ? normalizePath(file.path) : undefined;
+
+  // ---------------- NORMALIZE INPUT TO ENGLISH ----------------
+  if (lang !== "en") {
+    if (mealData.description) {
+      mealData.description = await translateText(mealData.description, "en");
     }
 
-    // ---------------- PARSE BODY ----------------
-    const description = req.body.description;
-
-    const ingredients =
-      typeof req.body.ingredients === "string"
-        ? JSON.parse(req.body.ingredients)
-        : req.body.ingredients;
-
-    const caloryCount =
-      typeof req.body.caloryCount === "string"
-        ? JSON.parse(req.body.caloryCount)
-        : req.body.caloryCount;
-
-    if (!description || !Array.isArray(caloryCount)) {
-      throw new ApiError(
-        400,
-        "Meal data must include description and caloryCount",
+    // Translate ingredient names
+    if (Array.isArray(mealData.ingredients)) {
+      mealData.ingredients = await Promise.all(
+        mealData.ingredients.map(async (ingredient: any) => ({
+          ...ingredient,
+          name: await translateText(ingredient.name, "en"),
+          quantity: await translateText(ingredient.quantity, "en"),
+        })),
       );
     }
 
-    // ---------------- IMAGE (OPTIONAL) ----------------
-    const file = req.file as Express.Multer.File | undefined;
-    const imagePath = file ? normalizePath(file.path) : undefined;
-
-    // ---------------- CALCULATE KCAL ----------------
-    const totalKcal = caloryCount.reduce(
-      (sum: number, item: { label: string; kcal: number }) => sum + item.kcal,
-      0,
-    );
-
-    // ---------------- UPDATE PAYLOAD ----------------
-    const swapMealPayload: any = {
-      description,
-      ingredients: Array.isArray(ingredients) ? ingredients : [],
-      caloryCount,
-      kcal: totalKcal,
-    };
-
-    if (imagePath) {
-      swapMealPayload.image = imagePath;
+    // Translate calory count labels
+    if (Array.isArray(mealData.caloryCount)) {
+      for (const c of mealData.caloryCount) {
+        c.label = await translateText(c.label, "en");
+      }
     }
-
-    // ---------------- UPDATE ----------------
-    const swappedMeal = await MealModel.findOneAndUpdate(
-      { _id: mealId, userId },
-      { $set: swapMealPayload },
-      { new: true },
-    );
-
-    if (!swappedMeal) {
-      throw new ApiError(404, "Meal not found or you do not have permission");
-    }
-
-    return swappedMeal;
-  } catch (err) {
-    console.log(err);
   }
+
+  // ---------------- CALCULATE KCAL ----------------
+  const caloryCount = mealData.caloryCount || [];
+  const totalKcal = caloryCount.reduce(
+    (sum: number, item: any) => sum + item.kcal,
+    0,
+  );
+
+  // ---------------- UPDATE PAYLOAD ----------------
+  const swapMealPayload: any = {
+    mealName: mealData.mealName,
+    description: mealData.description,
+    ingredients: Array.isArray(mealData.ingredients)
+      ? mealData.ingredients
+      : [],
+    caloryCount,
+    kcal: totalKcal,
+    serving: mealData.serving,
+  };
+
+  if (imagePath) {
+    swapMealPayload.image = imagePath;
+  }
+
+  // ---------------- UPDATE ----------------
+  const swappedMeal = await MealModel.findOneAndUpdate(
+    { _id: mealId, userId },
+    { $set: swapMealPayload },
+    { new: true },
+  );
+
+  if (!swappedMeal) {
+    throw new ApiError(404, "Meal not found or you do not have permission");
+  }
+
+  // ---------------- TRANSLATE RESPONSE ----------------
+  if (lang !== "en") {
+    swappedMeal.description = await translateText(
+      swappedMeal.description,
+      lang,
+    );
+
+    // Translate ingredient names back to user language
+    if (Array.isArray(swappedMeal.ingredients)) {
+      swappedMeal.ingredients = await Promise.all(
+        swappedMeal.ingredients.map(async (ingredient: any) => ({
+          ...ingredient,
+          name: await translateText(ingredient.name, lang),
+          quantity: await translateText(ingredient.quantity, lang),
+        })),
+      );
+    }
+
+    // Translate calory count labels back to user language
+    if (Array.isArray(swappedMeal.caloryCount)) {
+      for (const c of swappedMeal.caloryCount) {
+        c.label = await translateText(c.label, lang);
+      }
+    }
+  }
+
+  return swappedMeal;
 };
 
 export const updateMealStatusService = async (data: Request) => {
