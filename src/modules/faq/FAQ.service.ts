@@ -17,3 +17,8 @@ export const allFaqService = async (data: Request) => {
   const getFaq = await FAQModel.find();
   return getFaq;
 };
+
+export const deleteFaqService = async (id: string) => {
+  const deleteFaq = await FAQModel.findByIdAndDelete(id);
+  return deleteFaq;
+};

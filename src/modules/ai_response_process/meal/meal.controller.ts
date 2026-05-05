@@ -74,7 +74,7 @@ export const getMealJobStatus = async (req: Request, res: Response) => {
     }
 
     const state = await job.getState();
-
+    console.log(state);
     if (state === "completed") {
       return res.json({
         status: "completed",

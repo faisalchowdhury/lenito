@@ -466,11 +466,11 @@ export const createMealService = async (req: any) => {
           );
         }
 
-        if (Array.isArray(meal.caloryCount)) {
-          for (const c of meal.caloryCount) {
-            c.label = await translateText(c.label, "en");
-          }
-        }
+        // if (Array.isArray(meal.caloryCount)) {
+        //   for (const c of meal.caloryCount) {
+        //     c.label = await translateText(c.label, "en");
+        //   }
+        // }
       }
     }
   }

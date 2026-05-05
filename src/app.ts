@@ -15,20 +15,26 @@ app.use(logHttpRequests);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.options("*", cors()); // Enable preflight for all routes
+
+app.options("*", cors()); // Enable preflight for all routes
 
 app.use(
   cors({
     origin: [
-      "*",
       "http://localhost:5173",
       "http://localhost:5174",
-      "https://barber-admin-dashboard-mytf0qi4b-faisal-chowdhurys-projects.vercel.app",
-      "https://barber-admin-dashboard-knvz8p4zy-faisal-chowdhurys-projects.vercel.app",
+      "https://nimur8000.sobhoy.com",
     ],
     credentials: true,
   }),
 );
 
+// ([
+//   "http://localhost:5173",
+//   "http://localhost:5174",
+//   "https://nimur8000.sobhoy.com",
+// ],
 app.use(express.static("public"));
 
 //application router

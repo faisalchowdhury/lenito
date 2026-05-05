@@ -38,6 +38,7 @@ import { IUserPayload } from "../../middlewares/roleGuard";
 import { JwtPayloadWithUser } from "../../middlewares/userVerification";
 
 import mongoose from "mongoose";
+import { SubscriptionModel } from "../subscription/subscription.model";
 
 // customer register User
 
@@ -1304,6 +1305,42 @@ export const getProfileInfo = async (req: Request, res: Response) => {
 //     });
 //   }
 // );
+
+export const getStats = catchAsync(async (req: Request, res: Response) => {
+  const totalCustomers = await UserModel.countDocuments({ role: "user" });
+  const activeSubscription = await SubscriptionModel.countDocuments();
+  const monthlyRevenue = await SubscriptionModel.aggregate([
+    {
+      $group: {
+        _id: {
+          year: { $year: "$createdAt" },
+          month: { $month: "$createdAt" },
+        },
+        total: { $sum: "$amount" },
+      },
+    },
+    {
+      $sort: {
+        "_id.year": 1,
+        "_id.month": 1,
+      },
+    },
+  ]);
+
+  return sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Dashboard stats retrieved successfully",
+    data: {
+      totalCustomers,
+      activeSubscription,
+      monthlyRevenue: monthlyRevenue.map((item) => ({
+        month: `${item._id.year}-${String(item._id.month).padStart(2, "0")}`,
+        total: item.total,
+      })),
+    },
+  });
+});
 
 const UserController = {
   registerUser,
