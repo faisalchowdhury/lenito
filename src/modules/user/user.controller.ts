@@ -199,7 +199,107 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
 
   await user.save();
 });
+import { OAuth2Client } from "google-auth-library";
 
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// import { OAuth2Client } from "google-auth-library";
+// import { UserModel } from "../modules/user/user.model"; // adjust path
+// import { generateTokenForLogin } from "./your-token-file"; // adjust import
+// import { JWT_SECRET_KEY } from "../config";
+
+// const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// export const googleLogin = async (req, res) => {
+//   try {
+//     const { idToken } = req.body;
+
+//     if (!idToken) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "ID token is required" });
+//     }
+
+//     // Verify Google token
+//     const ticket = await googleClient.verifyIdToken({
+//       idToken,
+//       audience: process.env.GOOGLE_CLIENT_ID,
+//     });
+//     const payload: any = ticket.getPayload();
+//     if (!payload) {
+//       return res
+//         .status(401)
+//         .json({ success: false, message: "Invalid Google token" });
+//     }
+
+//     const { email, given_name, family_name, picture, email_verified } = payload;
+
+//     // Find or create user
+//     let user = await UserModel.findOne({ email });
+
+//     if (!user) {
+//       // Create new user with Google data (password intentionally omitted)
+//       user = new UserModel({
+//         email,
+//         firstName: given_name || email.split("@")[0],
+//         lastName: family_name || "",
+//         image:
+//           picture || "https://faisal5000.merinasib.shop/images/User_Avatar.png",
+//         isVerified: email_verified || true,
+//         provider: "google",
+//         role: "user",
+//         healthDetails: false,
+//         isDeleted: false,
+//         contactNumber: "", // optional – can be filled later
+//       });
+//       await user.save();
+//     } else {
+//       // Existing user – update Google‑related fields if not already set
+//       let needsUpdate = false;
+//       if (!user.provider) {
+//         user.provider = "google";
+//         needsUpdate = true;
+//       }
+//       if (!user.isVerified && email_verified) {
+//         user.isVerified = true;
+//         needsUpdate = true;
+//       }
+//       if (needsUpdate) {
+//         await user.save();
+//       }
+//     }
+
+//     // Use your existing token generator
+//     const appToken = generateTokenForLogin({
+//       id: user._id.toString(),
+//       name: `${user.firstName} ${user.lastName}`.trim() || user.email,
+//       email: user.email,
+//       role: user.role,
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       token: appToken,
+//       user: {
+//         id: user._id,
+//         email: user.email,
+//         firstName: user.firstName,
+//         lastName: user.lastName,
+//         image: user.image,
+//         role: user.role,
+//         provider: user.provider,
+//         isVerified: user.isVerified,
+//       },
+//     });
+//   } catch (error: any) {
+//     console.error("Google login error:", error);
+//     res.status(401).json({
+//       success: false,
+//       message: "Google authentication failed",
+//       error: error.message,
+//     });
+//   }
+// };
 // //cool down timer
 export const forgotPassword = catchAsync(
   async (req: Request, res: Response) => {
@@ -311,7 +411,7 @@ export const verifyOTP = catchAsync(async (req: Request, res: Response) => {
 
 // User Id
 export const updateUser = catchAsync(async (req: Request, res: Response) => {
-  const { firstName, lastName, email, contactNumber } = req.body;
+  const { firstName, lastName, contactNumber } = req.body;
 
   const decoded = req.user as IUserPayload;
   const userId = decoded.id;
@@ -345,6 +445,7 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
     updateData.image = `/images/${req.file.filename}`;
   }
 
+  console.log(req.file?.filename);
   console.log(userId);
   const updatedUser = await UserService.updateUserById(userId, updateData);
 
@@ -356,6 +457,7 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
       _id: updatedUser?._id,
       name: `${updatedUser?.firstName} ${updatedUser?.lastName}`,
       email: updatedUser?.email,
+      image: updatedUser?.image,
     },
   });
 });
@@ -588,103 +690,97 @@ const addDeviceId = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const getAllUsers = catchAsync(async (req: Request, res: Response) => {
-  let decoded;
+export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    decoded = verifyToken(req.headers.authorization);
-  } catch (error: any) {
-    return sendError(res, error); // If token verification fails, send error response.
-  }
-
-  const adminId = decoded.id as string;
-
-  // Verify if admin exists
-  const user = await findUserById(adminId);
-  if (!user) {
-    throw new ApiError(404, "This admin account does not exist.");
-  }
-
-  // Pagination and filters
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
-  const skip = (page - 1) * limit;
-
-  const { date, name, email, role, requestStatus } = req.query;
-
-  try {
-    // Get the user list based on pagination and filters
-    const { users, pagination } = await UserService.getUserList(
-      skip,
-      limit,
-      date as string,
-      name as string,
-      email as string,
-      role as string,
-      requestStatus as string,
-    );
-
-    if (users.length === 0) {
-      return sendResponse(res, {
-        statusCode: httpStatus.NO_CONTENT,
-        success: true,
-        message: "No user found based on your search.",
-        data: [],
-        pagination: {
-          ...pagination,
-          prevPage: pagination.prevPage ?? 0,
-          nextPage: pagination.nextPage ?? 0,
+    const users = await UserModel.aggregate([
+      // Exclude deleted users if needed
+      {
+        $match: {
+          isDeleted: false,
         },
-      });
-    }
-
-    // Populate manager info for each user
-    const usersWithManagerInfo = await UserModel.populate(users, {
-      path: "managerInfoId",
-      select: "type businessAddress websiteLink governMentImage.publicFileURL",
-    });
-
-    // Format response data
-    const responseData = usersWithManagerInfo.map((user: any) => ({
-      _id: user._id,
-      image: user.image?.publicFileURL,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      phone: user.phone,
-      address: user.address,
-      //isRequest: user.isRequest,
-      managerInfo: user.managerInfoId
-        ? {
-            type: user.managerInfoId.type,
-            businessAddress: user.managerInfoId.businessAddress,
-            websiteLink: user.managerInfoId.websiteLink,
-            governMentImage: user.managerInfoId.governMentImage?.publicFileURL,
-            isRequest: user.isRequest,
-          }
-        : null,
-      createdAt: user.createdAt,
-    }));
-
-    // Send response with pagination details
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "User list retrieved successfully",
-      data: responseData,
-      pagination: {
-        ...pagination,
-        prevPage: pagination.prevPage ?? 0,
-        nextPage: pagination.nextPage ?? 0,
       },
+
+      // Join health details
+      {
+        $lookup: {
+          from: "healthdetails", // collection name in mongodb
+          localField: "_id",
+          foreignField: "userId",
+          as: "healthDetails",
+        },
+      },
+
+      // Convert array to object
+      {
+        $unwind: {
+          path: "$healthDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // Final response format
+      {
+        $project: {
+          _id: 1,
+
+          // Full name
+          name: {
+            $concat: [
+              { $ifNull: ["$firstName", ""] },
+              " ",
+              { $ifNull: ["$lastName", ""] },
+            ],
+          },
+
+          email: 1,
+          image: 1,
+          phone: "$contactNumber",
+
+          bloodType: "$healthDetails.bloodGroup",
+
+          status: {
+            $cond: {
+              if: "$isVerified",
+              then: "Active",
+              else: "Pending",
+            },
+          },
+
+          memberSince: "$createdAt",
+
+          country: "$healthDetails.country",
+
+          diet: "$healthDetails.diet",
+
+          gender: "$healthDetails.gender",
+
+          age: "$healthDetails.age",
+        },
+      },
+
+      // Optional sorting
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Users fetched successfully",
+      data: users,
     });
   } catch (error: any) {
-    // Handle any errors during the user fetching or manager population
-    throw new ApiError(
-      error.statusCode || 500,
-      error.message || "Failed to retrieve users.",
-    );
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch users",
+      error: error.message,
+    });
   }
-});
+};
 
 // make admin delete
 
@@ -1305,42 +1401,6 @@ export const getProfileInfo = async (req: Request, res: Response) => {
 //     });
 //   }
 // );
-
-export const getStats = catchAsync(async (req: Request, res: Response) => {
-  const totalCustomers = await UserModel.countDocuments({ role: "user" });
-  const activeSubscription = await SubscriptionModel.countDocuments();
-  const monthlyRevenue = await SubscriptionModel.aggregate([
-    {
-      $group: {
-        _id: {
-          year: { $year: "$createdAt" },
-          month: { $month: "$createdAt" },
-        },
-        total: { $sum: "$amount" },
-      },
-    },
-    {
-      $sort: {
-        "_id.year": 1,
-        "_id.month": 1,
-      },
-    },
-  ]);
-
-  return sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Dashboard stats retrieved successfully",
-    data: {
-      totalCustomers,
-      activeSubscription,
-      monthlyRevenue: monthlyRevenue.map((item) => ({
-        month: `${item._id.year}-${String(item._id.month).padStart(2, "0")}`,
-        total: item.total,
-      })),
-    },
-  });
-});
 
 const UserController = {
   registerUser,

@@ -23,6 +23,7 @@ import { AiMealRoutes } from "../modules/ai_response_process/meal/meal.routes";
 import { CalorieRoutes } from "../modules/calories/calories.routes";
 import { PromocodeRoutes } from "../modules/promocode/promocode.route";
 import { ImageStorageRoutes } from "../modules/imgStorage/imgStorage.route";
+import { DashboardRoutes } from "../modules/dashboard/dashboard.route";
 
 // import { PaymentRoute } from "../modules/unused_payments/payment.route";
 
@@ -46,6 +47,7 @@ export const routesConfig = [
   { path: "about", handler: AboutRoutes },
   { path: "privacy", handler: PrivacyRoutes },
   { path: "notification", handler: NotificationRoutes },
+  { path: "dashboard", handler: DashboardRoutes },
 
   // { path: "/api/v1/payment", handler: PaymentRoute },
 

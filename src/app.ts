@@ -25,6 +25,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5174",
       "https://nimur8000.sobhoy.com",
+      "https://admin.bloodfit.co.uk",
     ],
     credentials: true,
   }),

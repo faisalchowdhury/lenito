@@ -27,3 +27,15 @@ export const getPlans = catchAsync(async (req: Request, res: Response) => {
     data: getPlans,
   });
 });
+
+export const deletePlan = catchAsync(async (req: Request, res: Response) => {
+  const planId = req.params.id;
+
+  const deletedPlan = await PlanModel.findByIdAndDelete(planId);
+  return sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Plan deleted successfully",
+    data: deletedPlan,
+  });
+});

@@ -17,6 +17,8 @@ export interface IUser extends Document {
   healthDetails?: boolean;
   isVerified: boolean;
   isDeleted: boolean;
+  provider: string;
+  googleId: string;
 }
 export type IOTP = {
   email: string;

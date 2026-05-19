@@ -14,11 +14,11 @@ router.post("/create-report", needReport);
 //router.post("/update", guardRole("primary"), updateCategory);
 
 router.get("/", guardRole(["admin"]), getReport);
-router.post("/delete", guardRole(["admin"]), deleteReport);
+router.delete("/delete", guardRole(["admin"]), deleteReport);
 router.patch("/update-status/:reportId", guardRole(["admin"]), updateReport);
 router.get(
   "/get-single-report/:reportId",
   guardRole(["admin"]),
-  getSingleReport
+  getSingleReport,
 );
 export const ReportRoutes = router;

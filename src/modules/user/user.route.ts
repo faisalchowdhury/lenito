@@ -4,7 +4,6 @@ import {
   deleteUser,
   forgotPassword,
   getSelfInfo,
-  getStats,
   loginUser,
   resetPassword,
   updateUser,
@@ -146,7 +145,5 @@ router.post(
   upload.single("profilePicture"),
   uploadProfilePicture,
 );
-
-router.get("/stats", guardRole("admin"), getStats);
 
 export const UserRoutes = router;

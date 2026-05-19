@@ -8,7 +8,7 @@ const userSchema = new Schema<IUser>(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    email: { type: String, required: true,  },
+    email: { type: String, required: true },
     contactNumber: { type: String, required: true },
     role: {
       type: String,
@@ -16,10 +16,15 @@ const userSchema = new Schema<IUser>(
       default: "user",
     },
     password: { type: String, required: true },
-    image: { type: String },
+    image: {
+      type: String,
+      default: "https://faisal5000.merinasib.shop/images/User_Avatar.png",
+    },
     healthDetails: { type: Boolean, required: false, default: false },
     isVerified: { type: Boolean, required: true, default: false },
     isDeleted: { type: Boolean, required: true, default: false },
+    provider: { type: String, enum: ["email", "google"], default: "email" },
+    googleId: { type: String, unique: true, sparse: true },
   },
   { timestamps: true },
 );
@@ -46,7 +51,7 @@ export const UserModel = mongoose.model<IUser>("User", userSchema);
 // UserModel.schema.index({ role: 1 });
 
 const OTPSchema = new Schema<IOTP>({
-  email: { type: String, required: true, trim: true, },
+  email: { type: String, required: true, trim: true },
   otp: { type: String, required: true, trim: true },
   expiresAt: { type: Date, required: true, index: { expires: "1m" } },
 });
