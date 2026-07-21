@@ -15,8 +15,7 @@ import {
   updateReportService,
 } from "./report.service";
 import { emitNotification } from "../../utils/socket";
-import { UserModel } from "../user/user.model";
-import mongoose, { Types } from "mongoose";
+import mongoose from "mongoose";
 import ApiError from "../../errors/ApiError";
 import paginationBuilder from "../../utils/paginationBuilder";
 

@@ -1,4 +1,3 @@
-import jwt from "jsonwebtoken";
 import httpStatus from "http-status";
 import sendError from "../../../utils/sendError";
 import {
@@ -11,7 +10,6 @@ import sendResponse from "../../../utils/sendResponse";
 import catchAsync from "../../../utils/catchAsync";
 
 import sanitizeHtml from "sanitize-html";
-import { JWT_SECRET_KEY } from "../../../config";
 import { Request, Response } from "express";
 import { findUserById } from "../../user/user.utils";
 import { verifyToken } from "../../../utils/JwtToken";

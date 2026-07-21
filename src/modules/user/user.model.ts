@@ -1,21 +1,18 @@
-import { UserController } from "../user/user.controller";
 import mongoose, { Schema } from "mongoose";
 import { IUser, IOTP } from "./user.interface";
-import { ERole } from "../../config/role";
-import { string } from "zod";
 
 const userSchema = new Schema<IUser>(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, required: true },
-    contactNumber: { type: String, required: true },
+    contactNumber: { type: String, required: false },
     role: {
       type: String,
       enum: ["admin", "user"],
       default: "user",
     },
-    password: { type: String, required: true },
+    password: { type: String, required: false },
     image: {
       type: String,
       default: "https://faisal5000.merinasib.shop/images/User_Avatar.png",

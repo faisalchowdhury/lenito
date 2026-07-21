@@ -7,7 +7,6 @@ import handleValidationError from "../errors/handleValidationError";
 import handlerCastError from "../errors/handleCastError";
 import handlerDuplicateError from "../errors/handleDuplicateError";
 
-import { NODE_ENV } from "../config";
 import ApiError from "../errors/ApiError";
 
 // const globalErrorHandler: ErrorRequestHandler = (

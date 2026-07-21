@@ -8,6 +8,7 @@ import router from "./routes";
 import { logger, logHttpRequests } from "./logger/logger";
 import { template } from "./rootTemplate";
 import "../src/workers/meal.worker";
+import "../src/workers/workout.worker";
 // Create an Express application
 const app: Application = express();
 app.use(logHttpRequests);

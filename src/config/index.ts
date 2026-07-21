@@ -36,3 +36,33 @@ export const FIREBASE_SERVICE_ACCOUNT_PATH =
     process.cwd(),
     "src/config/chorefit-ceefb-firebase-adminsdk-fbsvc-4d9a708a0d.json",
   );
+
+// ─────────────────────────────────────────────────────────────
+// Native IAP (Apple App Store / Google Play) subscription config
+// ─────────────────────────────────────────────────────────────
+
+// The app bundle / package id used in store product ids:
+//   com.bloodfitltd.bloodfit.{slug}.{monthly|yearly}
+export const IAP_BUNDLE_ID =
+  process.env.IAP_BUNDLE_ID || "com.bloodfitltd.bloodfit";
+
+// Apple App Store — shared secret from App Store Connect
+// (App Information → App-Specific Shared Secret). Required for real
+// verifyReceipt calls. When empty, verification falls back to "trust" mode.
+export const APPLE_SHARED_SECRET = process.env.APPLE_SHARED_SECRET || "";
+
+// Google Play — service account JSON with Android Publisher API access.
+// Provide either the path to the JSON file OR the raw JSON string.
+export const GOOGLE_PLAY_PACKAGE_NAME =
+  process.env.GOOGLE_PLAY_PACKAGE_NAME || IAP_BUNDLE_ID;
+export const GOOGLE_PLAY_SERVICE_ACCOUNT_PATH =
+  process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_PATH || "";
+export const GOOGLE_PLAY_SERVICE_ACCOUNT_JSON =
+  process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON || "";
+
+// When true, and store credentials are missing, the backend will TRUST the
+// receipt sent by the app instead of contacting Apple/Google. Useful for
+// development so the Flutter dev can test the full flow before store
+// credentials exist. MUST be false in production.
+export const IAP_TRUST_MODE =
+  (process.env.IAP_TRUST_MODE || "true").toLowerCase() === "true";

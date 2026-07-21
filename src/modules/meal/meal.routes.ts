@@ -6,13 +6,13 @@ import {
   deleteMeal,
   getCurrentMeals,
   getMeal,
+  getMealCalendarProgress,
   getMealsBydate,
   recentMeals,
   swapMeal,
   swapMealOptions,
   updateMealStatus,
 } from "./meal.controller";
-import { accessControl } from "../../middlewares/accessControl";
 import upload from "../../multer/multer";
 import { detectLanguage } from "../../middlewares/language.middleware";
 
@@ -31,6 +31,11 @@ router.post(
   createMeals,
 );
 router.get("/get-meals", guardRole(["user"]), detectLanguage, getCurrentMeals);
+router.get(
+  "/calendar-progress",
+  guardRole(["user"]),
+  getMealCalendarProgress,
+);
 router.get(
   "/recent-meals/:mealType",
   guardRole(["user"]),

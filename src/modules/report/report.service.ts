@@ -1,5 +1,4 @@
 import httpStatus from "http-status";
-import reportModel from "./report.model";
 import ApiError from "../../errors/ApiError";
 import { IReport } from "./report.interface";
 import ReportModel from "./report.model";

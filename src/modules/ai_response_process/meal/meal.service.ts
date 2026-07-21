@@ -2,10 +2,7 @@ import axios from "axios";
 import { Request } from "express";
 import { HealthDetailsModel } from "../../health_details/health_details.model";
 import { JwtPayloadWithUser } from "../../../middlewares/userVerification";
-import { WorkoutModel } from "../../workout_details/workout_details.model";
-import sendResponse from "../../../utils/sendResponse";
 import { mealQueue } from "../../../queues/meal.queues";
-import { UserModel } from "../../user/user.model";
 import FormData from "form-data";
 import { ImageStorageModel } from "../../imgStorage/imgStorage.model";
 

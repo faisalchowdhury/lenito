@@ -10,8 +10,8 @@ export type INotification = {
   userMsg: string;
   status: string;
   bookingId: string;
-  isAdminRead: Boolean;
-  isUserRead: Boolean;
+  isAdminRead: boolean;
+  isUserRead: boolean;
 } & Document;
 
 //--------> for push notifications <----------------------

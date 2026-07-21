@@ -1,12 +1,8 @@
 // pushNotification.ts
 import admin from "firebase-admin";
-import path from "path";
-
-import { readFileSync } from "fs";
 
 import { INotificationPayload } from "../notification.interface";
 import ApiError from "../../../errors/ApiError";
-import { FIREBASE_SERVICE_ACCOUNT_PATH } from "../../../config";
 import httpStatus from "http-status";
 
 // // Read and parse the Firebase service account JSON file

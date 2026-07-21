@@ -29,6 +29,7 @@ import {
   generateRegisterToken,
   generateToken,
   generateTokenForAdmin,
+  generateTokenForLogin,
   verifyToken,
 } from "../../utils/JwtToken";
 
@@ -38,7 +39,9 @@ import { IUserPayload } from "../../middlewares/roleGuard";
 import { JwtPayloadWithUser } from "../../middlewares/userVerification";
 
 import mongoose from "mongoose";
-import { SubscriptionModel } from "../subscription/subscription.model";
+
+// Google login
+import { OAuth2Client } from "google-auth-library";
 
 // customer register User
 
@@ -115,7 +118,7 @@ const resendOTP = catchAsync(async (req: Request, res: Response) => {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 60 * 1000);
   // Save or update the OTP in the database concurrently.
-  const isExistOtp = await Promise.all([
+  await Promise.all([
     OTPModel.findOneAndUpdate({ email }, { otp, expiresAt }, { upsert: true }),
   ]);
 
@@ -128,7 +131,7 @@ const resendOTP = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const loginUser = catchAsync(async (req: Request, res: Response) => {
-  const { email, password, fcmToken } = req.body;
+  const { email, password } = req.body;
 
   const user = await UserModel.findOne({ email });
   console.log(email);
@@ -199,107 +202,102 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
 
   await user.save();
 });
-import { OAuth2Client } from "google-auth-library";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// import { OAuth2Client } from "google-auth-library";
-// import { UserModel } from "../modules/user/user.model"; // adjust path
-// import { generateTokenForLogin } from "./your-token-file"; // adjust import
-// import { JWT_SECRET_KEY } from "../config";
+export const googleLogin = async (req: Request, res: Response) => {
+  try {
+    const { idToken } = req.body;
 
-// const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    if (!idToken) {
+      return res
+        .status(400)
+        .json({ success: false, message: "ID token is required" });
+    }
 
-// export const googleLogin = async (req, res) => {
-//   try {
-//     const { idToken } = req.body;
+    // Verify Google token
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload: any = ticket.getPayload();
+    if (!payload) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid Google token" });
+    }
 
-//     if (!idToken) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "ID token is required" });
-//     }
+    const { email, given_name, family_name, picture, email_verified } = payload;
 
-//     // Verify Google token
-//     const ticket = await googleClient.verifyIdToken({
-//       idToken,
-//       audience: process.env.GOOGLE_CLIENT_ID,
-//     });
-//     const payload: any = ticket.getPayload();
-//     if (!payload) {
-//       return res
-//         .status(401)
-//         .json({ success: false, message: "Invalid Google token" });
-//     }
+    // Find or create user
+    let user = await UserModel.findOne({ email });
 
-//     const { email, given_name, family_name, picture, email_verified } = payload;
+    if (!user) {
+      // Create new user with Google data (password intentionally omitted)
+      user = new UserModel({
+        email,
+        firstName: given_name || email.split("@")[0],
+        lastName: family_name || "",
+        image:
+          picture || "https://faisal5000.merinasib.shop/images/User_Avatar.png",
+        isVerified: email_verified || true,
+        provider: "google",
+        role: "user",
+        healthDetails: false,
+        isDeleted: false,
+        contactNumber: "", // optional – can be filled later
+      });
+      await user.save();
+    } else {
+      // Existing user – update Google‑related fields if not already set
+      let needsUpdate = false;
+      if (!user.provider) {
+        user.provider = "google";
+        needsUpdate = true;
+      }
+      if (!user.isVerified && email_verified) {
+        user.isVerified = true;
+        needsUpdate = true;
+      }
+      if (needsUpdate) {
+        await user.save();
+      }
+    }
 
-//     // Find or create user
-//     let user = await UserModel.findOne({ email });
+    // Use your existing token generator
+    const appToken = generateTokenForLogin({
+      id: user._id.toString(),
+      name: `${user.firstName} ${user.lastName}`.trim() || user.email,
+      email: user.email,
+      role: user.role,
+    });
+    const userData = {
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      image: user.image,
+      role: user.role,
+      provider: user.provider,
+      isVerified: user.isVerified,
+      healthDetails: user.healthDetails,
+      token: appToken,
+    };
+    res.status(200).json({
+      success: true,
 
-//     if (!user) {
-//       // Create new user with Google data (password intentionally omitted)
-//       user = new UserModel({
-//         email,
-//         firstName: given_name || email.split("@")[0],
-//         lastName: family_name || "",
-//         image:
-//           picture || "https://faisal5000.merinasib.shop/images/User_Avatar.png",
-//         isVerified: email_verified || true,
-//         provider: "google",
-//         role: "user",
-//         healthDetails: false,
-//         isDeleted: false,
-//         contactNumber: "", // optional – can be filled later
-//       });
-//       await user.save();
-//     } else {
-//       // Existing user – update Google‑related fields if not already set
-//       let needsUpdate = false;
-//       if (!user.provider) {
-//         user.provider = "google";
-//         needsUpdate = true;
-//       }
-//       if (!user.isVerified && email_verified) {
-//         user.isVerified = true;
-//         needsUpdate = true;
-//       }
-//       if (needsUpdate) {
-//         await user.save();
-//       }
-//     }
-
-//     // Use your existing token generator
-//     const appToken = generateTokenForLogin({
-//       id: user._id.toString(),
-//       name: `${user.firstName} ${user.lastName}`.trim() || user.email,
-//       email: user.email,
-//       role: user.role,
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       token: appToken,
-//       user: {
-//         id: user._id,
-//         email: user.email,
-//         firstName: user.firstName,
-//         lastName: user.lastName,
-//         image: user.image,
-//         role: user.role,
-//         provider: user.provider,
-//         isVerified: user.isVerified,
-//       },
-//     });
-//   } catch (error: any) {
-//     console.error("Google login error:", error);
-//     res.status(401).json({
-//       success: false,
-//       message: "Google authentication failed",
-//       error: error.message,
-//     });
-//   }
-// };
+      data: userData,
+    });
+    console.log(userData, "token : ", appToken);
+  } catch (error: any) {
+    console.error("Google login error:", error);
+    res.status(401).json({
+      success: false,
+      message: "Google authentication failed",
+      error: error.message,
+    });
+  }
+};
 // //cool down timer
 export const forgotPassword = catchAsync(
   async (req: Request, res: Response) => {
@@ -314,7 +312,6 @@ export const forgotPassword = catchAsync(
       throw new ApiError(401, "This account does not exist.");
     }
 
-    const now = new Date();
     // Check if there's a pending OTP request and if the 2-minute cooldown has passed
     // const otpRecord = await OTPModel.findOne({ email });
     // if (otpRecord && otpRecord.expiresAt > now) {

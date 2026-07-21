@@ -17,6 +17,14 @@ const subscriptionSchema = new Schema<ISubscription>(
       required: true,
     },
 
+    // Snapshot of plan identity for fast status responses
+    planSlug: {
+      type: String,
+    },
+    planName: {
+      type: String,
+    },
+
     // Monthly / Yearly
     billingCycle: {
       type: String,
@@ -58,8 +66,26 @@ const subscriptionSchema = new Schema<ISubscription>(
       default: true,
     },
 
+    // ── Native IAP fields ───────────────────────────────────
+    platform: {
+      type: String,
+      enum: ["ios", "android"],
+    },
+    productId: {
+      type: String,
+    },
+    transactionId: {
+      type: String,
+    },
+    purchaseToken: {
+      type: String,
+    },
+    latestReceipt: {
+      type: String,
+    },
+
     paymentProvider: {
-      type: String, // "stripe", "paypal"
+      type: String, // "apple", "google", "stripe"
     },
 
     externalSubscriptionId: {
@@ -79,6 +105,15 @@ subscriptionSchema.index(
   {
     unique: true,
     partialFilterExpression: { status: "active" },
+  }
+);
+
+// A store transaction can only ever be recorded once (reject duplicate receipts)
+subscriptionSchema.index(
+  { transactionId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { transactionId: { $type: "string" } },
   }
 );
 
