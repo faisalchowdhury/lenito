@@ -1,9 +1,9 @@
-import mongoose, { Types } from "mongoose";
+import { Types } from "mongoose";
 import { UserModel } from "../user/user.model";
 
 // admin.service.ts
 const updateStatus = async (userId: Types.ObjectId, days: number) => {
-  let extendDays = new Date();
+  const extendDays = new Date();
   extendDays.setDate(extendDays.getDate() + days);
   const user = await UserModel.findByIdAndUpdate(
     userId,

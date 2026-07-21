@@ -4,6 +4,7 @@ import {
   deleteUser,
   forgotPassword,
   getSelfInfo,
+  googleLogin,
   loginUser,
   resetPassword,
   updateUser,
@@ -25,8 +26,6 @@ import {
 
 import upload from "../../multer/multer";
 import { guardRole } from "../../middlewares/roleGuard";
-import { UserService } from "./user.service";
-import userVerification from "../../middlewares/userVerification";
 
 const router = express.Router();
 export const uploadImages = upload.fields([
@@ -41,6 +40,7 @@ router.post(
 );
 
 router.post("/login", loginUser);
+router.post("/google-login", googleLogin);
 
 // // router.post("/device-login", UserController.deviceLoginUser);
 router.post("/forget-password", forgotPassword);

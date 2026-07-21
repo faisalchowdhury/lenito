@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import catchAsync from "../../utils/catchAsync";
 import {
+  getHealthDetailsService,
   getWeightHistoryService,
   healthDetailsService,
   updateHealthDetailsService,
@@ -42,6 +43,19 @@ export const getWeightHistory = async (req: Request, res: Response) => {
     data: getWeightHistory,
   });
 };
+
+export const getHealthDetails = catchAsync(
+  async (req: Request, res: Response) => {
+    const healthDetails = await getHealthDetailsService(req);
+
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Health details retrieved successfully",
+      data: healthDetails,
+    });
+  },
+);
 
 export const updateHealthDetails = catchAsync(
   async (req: Request, res: Response) => {

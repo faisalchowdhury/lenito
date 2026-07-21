@@ -641,9 +641,12 @@ export const swapMealOptionsService = async (req: any) => {
       generate_images: true,
     };
     console.log(params);
-    const response = await axios.get("http://localhost:8000/meal/swap-meal", {
-      params,
-    });
+    const response = await axios.get(
+      `${process.env.AI_SERVER_BASE}/meal/swap-meal`,
+      {
+        params,
+      },
+    );
 
     return response.data;
   } catch (err: any) {
@@ -1055,6 +1058,81 @@ export const createSingleMealService = async (req: Request) => {
   } catch (err) {
     console.log(err);
   }
+};
+
+// calendar progress for the current month (or a requested month)
+// returns one entry per day of the month with the meal-completion percentage
+export const getMealCalendarProgressService = async (req: any) => {
+  const user = req.user as JwtPayloadWithUser;
+  const userId = user.id;
+
+  // optional ?year=2026&month=6 (1-based month) for calendar navigation,
+  // otherwise default to the current month
+  const now = dayjs();
+  const year = Number(req.query?.year) || now.year();
+  const month = Number(req.query?.month) || now.month() + 1; // 1-based
+
+  if (month < 1 || month > 12) {
+    throw new ApiError(400, "month must be between 1 and 12");
+  }
+
+  const monthIndex = month - 1; // 0-based for Date.UTC
+  const daysInMonth = dayjs(
+    `${year}-${String(month).padStart(2, "0")}-01`,
+  ).daysInMonth();
+
+  // stored meal dates are at UTC midnight, so match the month in UTC
+  const start = new Date(Date.UTC(year, monthIndex, 1));
+  const end = new Date(Date.UTC(year, monthIndex + 1, 1));
+
+  const grouped = await MealModel.aggregate([
+    {
+      $match: {
+        userId: new Types.ObjectId(userId),
+        date: { $gte: start, $lt: end },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "UTC" },
+        },
+        total: { $sum: 1 },
+        done: {
+          $sum: { $cond: [{ $eq: ["$status", "done"] }, 1, 0] },
+        },
+      },
+    },
+  ]);
+
+  const byDate = new Map<string, { total: number; done: number }>(
+    grouped.map((g: any) => [g._id, { total: g.total, done: g.done }]),
+  );
+
+  const calendar = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const entry = byDate.get(dateStr);
+    const total = entry?.total ?? 0;
+    const done = entry?.done ?? 0;
+    const percentage = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    calendar.push({
+      day: dayjs(dateStr).format("dddd"), // weekday name e.g. "Tuesday"
+      dayNumber: d, // 1-30/31
+      date: dateStr, // YYYY-MM-DD
+      totalMeals: total,
+      completedMeals: done,
+      percentage, // 0-100
+    });
+  }
+
+  return {
+    year,
+    month,
+    daysInMonth,
+    calendar,
+  };
 };
 
 export const getMealsByDateService = async (req: any) => {

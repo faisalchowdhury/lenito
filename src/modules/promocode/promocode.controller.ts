@@ -9,7 +9,6 @@ import {
   validatePromocodeService,
 } from "./promocode.service";
 import { PromocodeModel, UserPromocodeModel } from "./promocode.model";
-import ApiError from "../../errors/ApiError";
 import { JwtPayloadWithUser } from "../../middlewares/userVerification";
 import sendResponse from "../../utils/sendResponse";
 

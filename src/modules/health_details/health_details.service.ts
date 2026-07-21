@@ -145,6 +145,23 @@ export const getWeightHistoryService = async (data: Request) => {
   return history;
 };
 
+// get health details service
+export const getHealthDetailsService = async (req: Request) => {
+  const user = req.user as JwtPayloadWithUser;
+  const userId = user.id;
+
+  const healthDetails = await HealthDetailsModel.findOne({ userId }).lean();
+
+  if (!healthDetails) {
+    throw new ApiError(
+      httpStatus.NOT_FOUND,
+      "Health details not found for this user",
+    );
+  }
+
+  return healthDetails;
+};
+
 export const updateHealthDetailsService = async (req: Request) => {
   const session = await mongoose.startSession();
   session.startTransaction();

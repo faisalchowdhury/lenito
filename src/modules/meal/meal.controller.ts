@@ -1,12 +1,11 @@
 import { Request, Response } from "express";
 import catchAsync from "../../utils/catchAsync";
-import { JwtPayloadWithUser } from "../../middlewares/userVerification";
-import { MealModel } from "./meal.model";
 import {
   createMealService,
   createSingleMealService,
   deleteMealService,
   getCurrentMealsService,
+  getMealCalendarProgressService,
   getMealsByDateService,
   getMealService,
   myRecentMeals,
@@ -79,7 +78,7 @@ export const swapMeal = catchAsync(async (req: Request, res: Response) => {
 
 export const updateMealStatus = catchAsync(
   async (req: Request, res: Response) => {
-    const updateMealStatus = await updateMealStatusService(req);
+    await updateMealStatusService(req);
     return sendResponse(res, {
       statusCode: 200,
       success: true,
@@ -101,7 +100,7 @@ export const getMeal = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const deleteMeal = catchAsync(async (req: Request, res: Response) => {
-  const deleteMeal = await deleteMealService(req);
+  await deleteMealService(req);
   return sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -119,6 +118,19 @@ export const createSingleMeal = catchAsync(
       success: true,
       message: "Meal created successfully",
       data: createSingleMeal,
+    });
+  },
+);
+
+export const getMealCalendarProgress = catchAsync(
+  async (req: Request, res: Response) => {
+    const progress = await getMealCalendarProgressService(req);
+
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Meal calendar progress fetched successfully",
+      data: progress,
     });
   },
 );

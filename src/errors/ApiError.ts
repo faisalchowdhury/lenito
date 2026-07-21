@@ -17,7 +17,6 @@
 // }
 
 // export default ApiError;
-import httpStatus from "http-status";
 
 class ApiError extends Error {
   public statusCode: number;

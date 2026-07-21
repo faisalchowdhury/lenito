@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { ImageStorageModel } from "./imgStorage.model";
-import { send } from "node:process";
 import sendResponse from "../../utils/sendResponse";
 
 export const getImageFromLocal = async (req: Request, res: Response) => {

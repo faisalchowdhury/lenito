@@ -7,8 +7,7 @@ import {
   getMeals,
   scanFood,
 } from "./meal.controller";
-import { accessControl } from "../../../middlewares/accessControl";
-import upload, { memoryUpload } from "../../../multer/multer";
+import { memoryUpload } from "../../../multer/multer";
 const route = express.Router();
 
 route.get("/get-meals-plans", guardRole("user"), getMeals);

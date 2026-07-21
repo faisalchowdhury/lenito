@@ -1,5 +1,4 @@
-import { Document, Types } from "mongoose";
-import { TRole } from "../../config/role";
+import { Document } from "mongoose";
 
 // export interface ILocation {
 //   type: "Point";

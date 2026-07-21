@@ -7,27 +7,24 @@ import { OTPModel, UserModel } from "./user.model";
 
 import ApiError from "../../errors/ApiError";
 
-import { findUserByEmail, generateOTP, hashPassword } from "./user.utils";
+import { findUserByEmail, hashPassword } from "./user.utils";
 
 import httpStatus from "http-status";
 import { generateToken, verifyToken } from "../../utils/JwtToken";
 
 import { TRole } from "../../config/role";
 import paginationBuilder from "../../utils/paginationBuilder";
-import mongoose, { Types } from "mongoose";
-import { addDays } from "date-fns";
+import mongoose from "mongoose";
 import {
   twilioAccountSid,
   twilioAuthToken,
   twilioPhoneNumber,
 } from "../../config";
-import sendResponse from "../../utils/sendResponse";
 import { JwtPayloadWithUser } from "../../middlewares/userVerification";
 
 export const registerUserService = async (data: any) => {
   const { firstName, lastName, email, contactNumber, password } = data.body;
   const start = Date.now();
-  const session = await mongoose.startSession();
   // Check if user already exists
   const existingUser = await UserModel.findOne({ email });
 
@@ -326,13 +323,6 @@ const verifyOTPService = async (otp: string, authorizationHeader: string) => {
 };
 
 // OTP Verification
-
-// Ensure config is properly typed
-interface Config {
-  twilioAccountSid: string;
-  twilioAuthToken: string;
-  twilioPhoneNumber: string;
-}
 
 const client = new Twilio(twilioAccountSid, twilioAuthToken);
 
